@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  html, body {
+    margin:0; padding:0; height:100%;
+    background:#0f0f11;
+    color:#ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select:none;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 12px auto 24px;
+    padding:0 12px 48px;
+  }
+  header {
+    display:flex;
+    justify-content:flex-end;
+    font-size:14px;
+    color:#666;
+    user-select:none;
+    margin-bottom:12px;
+  }
+  .top-summary {
+    display:flex;
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .card {
+    background:#18181c;
+    border-radius:4px;
+    flex:1;
+    display:flex;
+    padding:16px 16px 16px 12px;
+    cursor:default;
+  }
+  .card-color-bar {
+    width:3px;
+    border-radius:2px;
+    margin-right:12px;
+  }
+  .card-content {
+    flex:1;
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .card-header {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom:6px;
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .card-header .grade {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: #aaa;
+  }
+  .card-number {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1;
+    margin-top: 4px;
+    color: #ddd;
+  }
+  .card-percent {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+  .card-names {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: #bbb;
+    user-select:text;
+    word-break: break-word;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: #18181c;
+    border: none;
+    border-radius: 4px;
+    color: #bbb;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 6px 16px;
+    cursor: pointer;
+    user-select:none;
+    transition: background-color 0.15s ease,color 0.15s ease;
+  }
+  .filter-btn.active {
+    color: #fff;
+  }
+  .filter-btn.all.active {
+    color: #60a5fa;
+  }
+  .filter-btn.A.active {
+    color: #4ade80;
+  }
+  .filter-btn.B.active {
+    color: #60a5fa;
+  }
+  .filter-btn.C.active {
+    color: #fbbf24;
+  }
+  .filter-btn.D.active {
+    color: #f87171;
+  }
+  .filter-count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: #888;
+    user-select:none;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 14px;
+    user-select:none;
+  }
+  thead tr {
+    border-bottom: 1px solid #333;
+  }
+  thead th {
+    padding: 8px 6px 8px 6px;
+    color: #999;
+    font-weight: 600;
+    text-align: left;
+    user-select:none;
+  }
+  tbody tr {
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+  }
+  tbody tr:hover {
+    background: #222226;
+  }
+  tbody tr.expanded {
+    background: #1f1f23;
+  }
+  tbody td {
+    padding: 8px 6px 8px 6px;
+    vertical-align: middle;
+    color: #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  tbody td.center {
+    text-align: center;
+  }
+  tbody td.right {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  .grade-label {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1.5px solid;
+    display: inline-block;
+    user-select:none;
+  }
+  .grade-A {
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  .grade-B {
+    color: #60a5fa;
+    border-color: #60a5fa;
+  }
+  .grade-C {
+    color: #fbbf24;
+    border-color: #fbbf24;
+  }
+  .grade-D {
+    color: #f87171;
+    border-color: #f87171;
+  }
+  .progress-bar-container {
+    background: #222225;
+    border-radius: 2px;
+    width: 100%;
+    height: 14px;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .progress-bar {
+    height: 14px;
+    border-radius: 2px;
+  }
+  .progress-A {
+    background: #4ade80;
+  }
+  .progress-B {
+    background: #60a5fa;
+  }
+  .progress-C {
+    background: #fbbf24;
+  }
+  .progress-D {
+    background: #f87171;
+  }
+  .arrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: #888;
+    user-select:none;
+    transition: transform 0.2s ease;
+  }
+  .arrow.expanded {
+    transform: rotate(90deg);
+    color: #ccc;
+  }
+  /* 详情面板 */
+  .details-row td {
+    background: #18181c;
+    padding: 12px 18px 18px 18px !important;
+  }
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    color: #ccc;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .details-section {
+    background: #222225;
+    padding: 12px 14px;
+    border-radius: 4px;
+    min-height: 80px;
+    overflow-wrap: break-word;
+  }
+  .details-section h4 {
+    margin: 0 0 8px 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: #eee;
+  }
+  .details-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style-type: disc;
+    color: #bbb;
+  }
+  .alert {
+    margin-top: 16px;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.4;
+    user-select:text;
+    white-space: pre-wrap;
+  }
+  .alert-warning {
+    background: #facc15;
+    color: #3c2f00;
+  }
+  .alert-danger {
+    background: #f87171;
+    color: #4a0e0e;
+  }
+  /* Scrollbar for table container if needed */
+  #table-container {
+    max-height: 600px;
+    overflow-y: auto;
+    border-radius: 4px;
+    border: 1px solid #222;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div id="render-time"></div>
+  </header>
+  <section class="top-summary" aria-label="档位汇总">
+    <!-- cards inserted by JS -->
+  </section>
+  <section class="filter-bar" role="region" aria-label="筛选栏">
+    <button class="filter-btn all active" data-grade="all" type="button" aria-pressed="true">全部</button>
+    <button class="filter-btn A" data-grade="A" type="button" aria-pressed="false">A档</button>
+    <button class="filter-btn B" data-grade="B" type="button" aria-pressed="false">B档</button>
+    <button class="filter-btn C" data-grade="C" type="button" aria-pressed="false">C档</button>
+    <button class="filter-btn D" data-grade="D" type="button" aria-pressed="false">D档</button>
+    <div class="filter-count" aria-live="polite" aria-atomic="true" aria-relevant="text"></div>
+  </section>
+  <section id="table-container" role="region" aria-label="候选人列表">
+    <table aria-describedby="table-desc" summary="候选人简历初筛详细数据">
+      <thead>
+        <tr>
+          <th scope="col" style="width: 36px;">#</th>
+          <th scope="col" style="width: 140px;">姓名</th>
+          <th scope="col" style="width: 180px;">院校·方向</th>
+          <th scope="col" style="width: 120px;">总分</th>
+          <th scope="col" style="width: 60px;">档位</th>
+          <th scope="col" style="width: 60px; text-align:right;">技术(40)</th>
+          <th scope="col" style="width: 60px; text-align:right;">项目(30)</th>
+          <th scope="col" style="width: 60px; text-align:right;">学术(20)</th>
+          <th scope="col" style="width: 60px; text-align:right;">潜力(10)</th>
+          <th scope="col" style="width: 40px;" aria-label="展开详情"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- rows inserted by JS -->
+      </tbody>
+    </table>
+  </section>
+</div>
+<script>
+  const input = '[{"candidate_feedback":"1.核心技能与岗位要求匹配度不足；2.当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"","strengths":[],"tech_direction_suggestion":"","weaknesses":[]},"name":"","school":"","score_breakdown":{"academic_background":0,"growth_potential":0,"project_quality":0,"technical_ability":0},"total_score":0}]';
+  const raw = JSON.parse(input);
+  const RESUME_DATA = Array.isArray(raw) ? raw : [raw];
+
+  // 档位颜色映射
+  const GRADE_COLORS = {
+    A: '#4ade80',
+    B: '#60a5fa',
+    C: '#fbbf24',
+    D: '#f87171'
+  };
+  const GRADE_LABELS = {
+    A: '直接推荐',
+    B: '建议复核',
+    C: '存疑',
+    D: '建议淘汰'
+  };
+
+  // 计算总分（防止数据中total_score不准确）
+  RESUME_DATA.forEach(item => {
+    const sb = item.score_breakdown;
+    item.total_score = (sb.technical_ability||0)+(sb.project_quality||0)+(sb.academic_background||0)+(sb.growth_potential||0);
+  });
+
+  // 统计各档位人数
+  const totalCount = RESUME_DATA.length;
+  const gradeMap = {A:[], B:[], C:[], D:[]};
+  RESUME_DATA.forEach(item => {
+    const g = item.grade || 'D';
+    if(gradeMap[g]) gradeMap[g].push(item);
+  });
+
+  // 渲染顶部汇总卡片
+  function renderTopSummary(){
+    const container = document.querySelector('.top-summary');
+    container.innerHTML = '';
+    ['A','B','C','D'].forEach(g=>{
+      const arr = gradeMap[g];
+      const count = arr.length;
+      const percent = totalCount?((count/totalCount)*100).toFixed(1):0;
+      const names = arr.map(i=>i.name||'(无名)').join('，');
+      const card = document.createElement('div');
+      card.className = 'card';
+      const color = GRADE_COLORS[g];
+      card.innerHTML = `
+        <div class="card-color-bar" style="background:${color};"></div>
+        <div class="card-content">
+          <div class="card-header"><span class="grade">${g}档</span><span>${GRADE_LABELS[g]}</span></div>
+          <div class="card-number" aria-label="${g}档人数">${count}</div>
+          <div class="card-percent">${percent}%</div>
+          <div class="card-names" title="${names}">${names || '无候选人'}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // 渲染筛选栏计数
+  function renderFilterCount(filtered){
+    const countEl = document.querySelector('.filter-count');
+    countEl.textContent = `显示 ${filtered.length} / ${totalCount} 条`;
+  }
+
+  // 渲染表格主体
+  function renderTable(filtered){
+    const tbody = document.querySelector('tbody');
+    tbody.innerHTML = '';
+    filtered.forEach((item,i)=>{
+      const idx = i+1;
+      const name = item.name || '(无名)';
+      const school = item.school || '';
+      const grade = item.grade || 'D';
+      const color = GRADE_COLORS[grade];
+      const sb = item.score_breakdown;
+      const total = item.total_score;
+      // 总分进度条宽度百分比
+      const progressWidth = Math.min(100, total);
+      // 技术/项目/学术/潜力数字，右对齐，等宽字体
+      const tech = sb.technical_ability || 0;
+      const proj = sb.project_quality || 0;
+      const acad = sb.academic_background || 0;
+      const grow = sb.growth_potential || 0;
+
+      // 主行
+      const tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      tr.setAttribute('data-index', i);
+      tr.setAttribute('aria-expanded', 'false');
+      tr.innerHTML = `
+        <td class="center">${idx}</td>
+        <td title="${name}">${name}</td>
+        <td title="${school}">${school}</td>
+        <td>
+          <div class="progress-bar-container" aria-label="总分 ${total} 分">
+            <div class="progress-bar progress-${grade}" style="width:${progressWidth}%;"></div>
+          </div>
+          <div class="right" style="margin-top:2px; font-family: 'DM Mono', monospace; font-weight:700; color:${color};">${total}</div>
+        </td>
+        <td><span class="grade-label grade-${grade}">${grade}</span></td>
+        <td class="right">${tech}</td>
+        <td class="right">${proj}</td>
+        <td class="right">${acad}</td>
+        <td class="right">${grow}</td>
+        <td class="center"><span class="arrow" aria-hidden="true">&#9654;</span></td>
+      `;
+      tbody.appendChild(tr);
+
+      // 详情行
+      const detailTr = document.createElement('tr');
+      detailTr.className = 'details-row';
+      detailTr.style.display = 'none';
+      detailTr.setAttribute('aria-hidden', 'true');
+      const detailTd = document.createElement('td');
+      detailTd.colSpan = 10;
+
+      // 亮点列表
+      const strengths = item.internal_feedback.strengths || [];
+      // 不足列表
+      const weaknesses = item.internal_feedback.weaknesses || [];
+      // 面试技术方向建议
+      const techSug = item.internal_feedback.tech_direction_suggestion || '';
+      // 复核重点
+      const reviewNote = item.internal_feedback.review_note || '';
+      // 候选人反馈（D档必填）
+      const candFb = item.candidate_feedback || '';
+
+      const strengthsHtml = strengths.length ? `<ul class="details-list">${strengths.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>` : '<p>无</p>';
+      const weaknessesHtml = weaknesses.length ? `<ul class="details-list">${weaknesses.map(w=>`<li>${escapeHtml(w)}</li>`).join('')}</ul>` : '<p>无</p>';
+      const techSugHtml = techSug ? `<p>${escapeHtml(techSug)}</p>` : '<p>无</p>';
+      let alertsHtml = '';
+      if(reviewNote){
+        alertsHtml += `<div class="alert alert-warning" role="alert">复核重点：${escapeHtml(reviewNote)}</div>`;
+      }
+      if(candFb){
+        alertsHtml += `<div class="alert alert-danger" role="alert">候选人反馈：${escapeHtml(candFb)}</div>`;
+      }
+
+      detailTd.innerHTML = `
+        <div class="details-grid">
+          <div class="details-section" aria-label="亮点">
+            <h4>亮点</h4>
+            ${strengthsHtml}
+          </div>
+          <div class="details-section" aria-label="不足">
+            <h4>不足</h4>
+            ${weaknessesHtml}
+          </div>
+          <div class="details-section" aria-label="面试技术方向建议">
+            <h4>面试技术方向建议</h4>
+            ${techSugHtml}
+          </
