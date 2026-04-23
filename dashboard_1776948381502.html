@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background-color: #0f0f11;
+    color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    user-select: none;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+  }
+  h1 {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .top-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: #18181c;
+    border-radius: 6px;
+    flex: 1;
+    display: flex;
+    border-left: 3px solid;
+    flex-direction: column;
+    padding: 12px 16px 16px;
+  }
+  .card.A {border-color: #4ade80;}
+  .card.B {border-color: #60a5fa;}
+  .card.C {border-color: #fbbf24;}
+  .card.D {border-color: #f87171;}
+  .card-header {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    color: #ccc;
+  }
+  .card-header .label {
+    font-family: 'DM Mono', monospace;
+  }
+  .card-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .card-percent {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .card-names {
+    font-size: 0.75rem;
+    color: #bbb;
+    line-height: 1.3;
+    overflow-y: auto;
+    max-height: 80px;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .filter-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  .filter-button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: transparent;
+    border: 1.5px solid #555;
+    color: #bbb;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .filter-button.active {
+    color: #111;
+    border-color: transparent;
+  }
+  .filter-button.active.A {background-color: #4ade80;}
+  .filter-button.active.B {background-color: #60a5fa;}
+  .filter-button.active.C {background-color: #fbbf24;}
+  .filter-button.active.D {background-color: #f87171;}
+  .filter-button:hover:not(.active) {
+    border-color: #888;
+    color: #eee;
+  }
+  .filter-count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: #888;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  thead tr {
+    border-bottom: 1px solid #333;
+  }
+  thead th {
+    color: #aaa;
+    font-weight: 600;
+    padding: 8px 6px;
+    text-align: left;
+    user-select: none;
+  }
+  tbody tr {
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+    transition: background-color 0.15s ease;
+  }
+  tbody tr:hover {
+    background-color: #222226;
+  }
+  tbody tr.expanded {
+    background-color: #1f1f23;
+  }
+  tbody td {
+    padding: 8px 6px;
+    vertical-align: middle;
+  }
+  td.num {
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    width: 48px;
+    user-select: text;
+  }
+  td.name, td.school {
+    user-select: text;
+  }
+  td.grade {
+    font-family: 'DM Mono', monospace;
+    width: 48px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border: 1.5px solid;
+    text-align: center;
+    width: 34px;
+    user-select: none;
+  }
+  .tag.A {color: #4ade80; border-color: #4ade80;}
+  .tag.B {color: #60a5fa; border-color: #60a5fa;}
+  .tag.C {color: #fbbf24; border-color: #fbbf24;}
+  .tag.D {color: #f87171; border-color: #f87171;}
+  .progress-bar {
+    position: relative;
+    height: 18px;
+    border-radius: 9px;
+    background: #222226;
+    overflow: hidden;
+    width: 100%;
+    user-select: none;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 9px 0 0 9px;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #111;
+    user-select: none;
+  }
+  .progress-fill.A {background-color: #4ade80;}
+  .progress-fill.B {background-color: #60a5fa;}
+  .progress-fill.C {background-color: #fbbf24;}
+  .progress-fill.D {background-color: #f87171;}
+  td.tech, td.project, td.academic, td.growth {
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    width: 48px;
+    user-select: text;
+  }
+  td.expand-arrow {
+    width: 28px;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #888;
+    user-select: none;
+    transition: transform 0.3s ease;
+  }
+  tr.expanded > td.expand-arrow {
+    color: #eee;
+  }
+  tr.expanded > td.expand-arrow .arrow {
+    transform: rotate(90deg);
+  }
+  .details-row {
+    background-color: #18181c;
+  }
+  .details-cell {
+    padding: 16px 12px;
+  }
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .details-section {
+    color: #ccc;
+  }
+  .details-section h4 {
+    margin: 0 0 6px;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #eee;
+  }
+  ul.details-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style-type: disc;
+    max-height: 100px;
+    overflow-y: auto;
+    color: #bbb;
+  }
+  .alert {
+    margin-top: 12px;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .alert.review {
+    background-color: #facc15;
+    color: #4b4b00;
+  }
+  .alert.feedback {
+    background-color: #f87171;
+    color: #5a1e1e;
+  }
+  #render-time {
+    position: fixed;
+    top: 10px;
+    right: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: #666;
+    user-select: none;
+    z-index: 1000;
+  }
+  /* Scrollbar for card names */
+  .card-names::-webkit-scrollbar {
+    width: 6px;
+  }
+  .card-names::-webkit-scrollbar-track {
+    background: #18181c;
+  }
+  .card-names::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+<div id="render-time"></div>
+<div id="app">
+  <div class="top-summary" role="region" aria-label="档位汇总">
+    <div class="card A" id="card-A" tabindex="0" aria-label="A档，直接推荐">
+      <div class="card-header"><span class="label">A档</span><span>直接推荐</span></div>
+      <div class="card-count" id="count-A">0</div>
+      <div class="card-percent" id="percent-A">0%</div>
+      <div class="card-names" id="names-A" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="card B" id="card-B" tabindex="0" aria-label="B档，建议复核">
+      <div class="card-header"><span class="label">B档</span><span>建议复核</span></div>
+      <div class="card-count" id="count-B">0</div>
+      <div class="card-percent" id="percent-B">0%</div>
+      <div class="card-names" id="names-B" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="card C" id="card-C" tabindex="0" aria-label="C档，存疑">
+      <div class="card-header"><span class="label">C档</span><span>存疑</span></div>
+      <div class="card-count" id="count-C">0</div>
+      <div class="card-percent" id="percent-C">0%</div>
+      <div class="card-names" id="names-C" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div class="card D" id="card-D" tabindex="0" aria-label="D档，建议淘汰">
+      <div class="card-header"><span class="label">D档</span><span>建议淘汰</span></div>
+      <div class="card-count" id="count-D">0</div>
+      <div class="card-percent" id="percent-D">0%</div>
+      <div class="card-names" id="names-D" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </div>
+  <div class="filter-bar" role="region" aria-label="筛选栏">
+    <div class="filter-buttons" role="group" aria-label="筛选档位">
+      <button class="filter-button active" data-grade="ALL" aria-pressed="true" type="button">全部</button>
+      <button class="filter-button A" data-grade="A" aria-pressed="false" type="button">A档</button>
+      <button class="filter-button B" data-grade="B" aria-pressed="false" type="button">B档</button>
+      <button class="filter-button C" data-grade="C" aria-pressed="false" type="button">C档</button>
+      <button class="filter-button D" data-grade="D" aria-pressed="false" type="button">D档</button>
+    </div>
+    <div class="filter-count" aria-live="polite" aria-atomic="true" id="filter-count">显示 0 / 0 条</div>
+  </div>
+  <table aria-label="候选人列表">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">姓名</th>
+        <th scope="col">院校·方向</th>
+        <th scope="col">总分</th>
+        <th scope="col">档位</th>
+        <th scope="col" style="text-align:right;">技术(40)</th>
+        <th scope="col" style="text-align:right;">项目(30)</th>
+        <th scope="col" style="text-align:right;">学术(20)</th>
+        <th scope="col" style="text-align:right;">潜力(10)</th>
+        <th scope="col" aria-label="展开详情"></th>
+      </tr>
+    </thead>
+    <tbody id="table-body" tabindex="0" aria-live="polite" aria-atomic="true">
+    </tbody>
+  </table>
+</div>
+<script>
+  // 输入数据处理
+  let input = `[]`;
+  let parsed;
+  try {
+    parsed = JSON.parse(input);
+    if(!Array.isArray(parsed)){
+      parsed = [parsed];
+    }
+  } catch(e) {
+    parsed = [];
+  }
+  const RESUME_DATA = parsed;
+
+  // 档位说明文本
+  const GRADE_LABELS = {
+    A: '直接推荐',
+    B: '建议复核',
+    C: '存疑',
+    D: '建议淘汰'
+  };
+  // 档位颜色
+  const GRADE_COLORS = {
+    A: '#4ade80',
+    B: '#60a5fa',
+    C: '#fbbf24',
+    D: '#f87171'
+  };
+
+  // 计算总分函数
+  function calcTotalScore(item){
+    const s = item.score_breakdown || {};
+    return (s.technical_ability||0) + (s.project_quality||0) + (s.academic_background||0) + (s.growth_potential||0);
+  }
+
+  // 渲染顶部汇总
+  function renderSummary(data){
+    const totalCount = data.length;
+    const groups = {A: [], B: [], C: [], D: []};
+    data.forEach(item => {
+      const g = item.grade || 'D';
+      if(groups[g]) groups[g].push(item);
+    });
+    ['A','B','C','D'].forEach(g => {
+      const count = groups[g].length;
+      const percent = totalCount ? ((count/totalCount)*100).toFixed(1) : '0.0';
+      document.getElementById('count-'+g).textContent = count;
+      document.getElementById('percent-'+g).textContent = percent + '%';
+      const namesElem = document.getElementById('names-'+g);
+      namesElem.textContent = '';
+      if(count > 0){
+        groups[g].forEach((item,i) => {
+          const span = document.createElement('div');
+          span.textContent = item.name || '';
+          namesElem.appendChild(span);
+        });
+      }
+    });
+  }
+
+  // 渲染表格主体
+  function renderTable(data, filterGrade='ALL'){
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    let filtered = data;
+    if(filterGrade !== 'ALL'){
+      filtered = data.filter(item => item.grade === filterGrade);
+    }
+    filtered.forEach((item,index) => {
+      const tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      tr.setAttribute('data-index', index);
+      tr.setAttribute('aria-expanded', 'false');
+      // 序号
+      const tdIndex = document.createElement('td');
+      tdIndex.className = 'num';
+      tdIndex.textContent = index + 1;
+      tr.appendChild(tdIndex);
+      // 姓名
+      const tdName = document.createElement('td');
+      tdName.className = 'name';
+      tdName.textContent = item.name || '';
+      tr.appendChild(tdName);
+      // 院校·方向
+      const tdSchool = document.createElement('td');
+      tdSchool.className = 'school';
+      tdSchool.textContent = item.school || '';
+      tr.appendChild(tdSchool);
+      // 总分列
+      const total = calcTotalScore(item);
+      const tdTotal = document.createElement('td');
+      tdTotal.style.padding = '6px 10px';
+      const progress = document.createElement('div');
+      progress.className = 'progress-bar';
+      const fill = document.createElement('div');
+      fill.className = 'progress-fill ' + (item.grade || 'D');
+      fill.style.width = total + '%';
+      progress.appendChild(fill);
+      const text = document.createElement('div');
+      text.className = 'progress-text';
+      text.textContent = total;
+      progress.appendChild(text);
+      tdTotal.appendChild(progress);
+      tr.appendChild(tdTotal);
+      // 档位
+      const tdGrade = document.createElement('td');
+      tdGrade.className = 'grade';
+      const tag = document.createElement('span');
+      tag.className = 'tag ' + (item.grade || 'D');
+      tag.textContent = item.grade || 'D';
+      tdGrade.appendChild(tag);
+      tr.appendChild(tdGrade);
+      // 技术
+      const tdTech = document.createElement('td');
+      tdTech.className = 'tech num';
+      tdTech.textContent = (item.score_breakdown && item.score_breakdown.technical_ability) || 0;
+      tr.appendChild(tdTech);
+      // 项目
+      const tdProject = document.createElement('td');
+      tdProject.className = 'project num';
+      tdProject.textContent = (item.score_breakdown && item.score_breakdown.project_quality) || 0;
+      tr.appendChild(tdProject);
+      // 学术
+      const tdAcademic = document.createElement('td');
+      tdAcademic.className = 'academic num';
+      td
