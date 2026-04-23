@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0f0f11;
+    color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    user-select: none;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 1rem auto 3rem;
+    padding: 0 1rem 4rem;
+  }
+  h1 {
+    color: #ddd;
+    font-weight: 400;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .top-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .card {
+    background: #18181c;
+    border-radius: 4px;
+    flex: 1;
+    padding: 1rem 1rem 1rem 0.75rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .card .color-bar {
+    width: 3px;
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 4px 0 0 4px;
+  }
+  .card-header {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-left: 0.5rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-header .tag {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 0 0.25rem;
+    border-radius: 2px;
+    color: #111;
+  }
+  .count {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 0.5rem;
+    color: #ddd;
+  }
+  .percent {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-left: 0.5rem;
+  }
+  .names {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: #aaa;
+    overflow-wrap: break-word;
+    max-height: 5rem;
+    overflow-y: auto;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .filter-button {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background: #222225;
+    color: #ccc;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .filter-button.active {
+    color: #111;
+  }
+  .count-info {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: #aaa;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    color: #ddd;
+  }
+  thead tr {
+    border-bottom: 1px solid #333336;
+  }
+  thead th {
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    text-align: left;
+    user-select: none;
+  }
+  thead th.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  tbody tr {
+    border-bottom: 1px solid #222225;
+    cursor: pointer;
+  }
+  tbody tr:hover {
+    background: #222225;
+  }
+  tbody td {
+    padding: 0.45rem 0.5rem 0.45rem 0.5rem;
+    vertical-align: middle;
+  }
+  tbody td.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  .tag-level {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    border: 1.5px solid;
+    display: inline-block;
+    user-select: none;
+    min-width: 20px;
+    text-align: center;
+  }
+  .progress-bar {
+    position: relative;
+    height: 1rem;
+    background: #222225;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 100px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    display: inline-block;
+    min-width: 32px;
+  }
+  .expand-arrow {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 1.3rem;
+    user-select: none;
+    color: #888;
+    transition: transform 0.3s ease;
+    text-align: center;
+    width: 20px;
+  }
+  .expand-arrow.expanded {
+    transform: rotate(90deg);
+    color: #ccc;
+  }
+  .details-row {
+    background: #18181c;
+  }
+  .details-content {
+    padding: 0.75rem 1rem 1rem 1rem;
+    color: #ccc;
+    font-size: 0.85rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .details-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .details-section h4 {
+    margin: 0 0 0.4rem 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #eee;
+  }
+  .details-section ul {
+    margin: 0; padding-left: 1.2rem;
+    list-style-type: disc;
+    color: #bbb;
+    max-height: 8rem;
+    overflow-y: auto;
+  }
+  .details-section p {
+    margin: 0;
+    white-space: pre-wrap;
+    color: #bbb;
+  }
+  .alert {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .alert-warning {
+    background: #facc15;
+    color: #3a3a00;
+  }
+  .alert-danger {
+    background: #f87171;
+    color: #4a0000;
+  }
+  #render-time {
+    position: fixed;
+    top: 8px;
+    right: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: #777;
+    user-select: none;
+  }
+  /* Scrollbar for names list */
+  .names::-webkit-scrollbar {
+    width: 6px;
+  }
+  .names::-webkit-scrollbar-thumb {
+    background: #555559;
+    border-radius: 3px;
+  }
+  .names::-webkit-scrollbar-track {
+    background: #222225;
+  }
+</style>
+</head>
+<body>
+<div id="render-time"></div>
+<div id="app">
+  <h1>简历初筛看板</h1>
+  <div class="top-summary" aria-label="档位汇总">
+    <!-- Cards inserted by JS -->
+  </div>
+  <div class="filter-bar" role="region" aria-label="筛选栏">
+    <div class="filter-buttons" role="group" aria-label="档位筛选按钮">
+      <!-- Buttons inserted by JS -->
+    </div>
+    <div class="count-info" aria-live="polite" aria-atomic="true"></div>
+  </div>
+  <table aria-label="候选人列表">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th>姓名</th>
+        <th>院校·方向</th>
+        <th>总分</th>
+        <th>档位</th>
+        <th class="numeric" style="width:50px;">技术(40)</th>
+        <th class="numeric" style="width:50px;">项目(30)</th>
+        <th class="numeric" style="width:50px;">学术(20)</th>
+        <th class="numeric" style="width:50px;">潜力(10)</th>
+        <th style="width:20px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows inserted by JS -->
+    </tbody>
+  </table>
+</div>
+<script>
+  // 输入数据
+  const RESUME_DATA = [];
+
+  // 配色和说明
+  const LEVELS = {
+    A: { color: '#4ade80', label: '直接推荐' },
+    B: { color: '#60a5fa', label: '建议复核' },
+    C: { color: '#fbbf24', label: '存疑' },
+    D: { color: '#f87171', label: '建议淘汰' }
+  };
+
+  // 计算总分
+  function calcTotal(score_breakdown) {
+    return (score_breakdown.technical_ability||0) + (score_breakdown.project_quality||0) + (score_breakdown.academic_background||0) + (score_breakdown.growth_potential||0);
+  }
+
+  // 格式化百分比，保留1位小数
+  function formatPercent(num) {
+    return (num * 100).toFixed(1) + '%';
+  }
+
+  // 创建元素简写
+  function ce(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    if (attrs) {
+      for (const k in attrs) {
+        if (k === 'class') el.className = attrs[k];
+        else if (k === 'style') el.style.cssText = attrs[k];
+        else if (k === 'dataset') {
+          for (const dkey in attrs[k]) el.dataset[dkey] = attrs[k][dkey];
+        }
+        else if (k.startsWith('aria-') || k === 'role' || k === 'tabindex') {
+          el.setAttribute(k, attrs[k]);
+        }
+        else if (k === 'html') {
+          el.innerHTML = attrs[k];
+        }
+        else {
+          el.setAttribute(k, attrs[k]);
+        }
+      }
+    }
+    for (const child of children) {
+      if (child == null) continue;
+      if (typeof child === 'string' || typeof child === 'number') {
+        el.appendChild(document.createTextNode(child));
+      } else if (child instanceof Node) {
+        el.appendChild(child);
+      }
+    }
+    return el;
+  }
+
+  // 渲染顶部汇总卡片
+  function renderTopSummary(data) {
+    const container = document.querySelector('.top-summary');
+    container.innerHTML = '';
+    const totalCount = data.length;
+    // 分组
+    const groups = { A: [], B: [], C: [], D: [] };
+    for (const item of data) {
+      if (groups[item.grade]) groups[item.grade].push(item);
+    }
+    for (const level of ['A','B','C','D']) {
+      const list = groups[level];
+      const color = LEVELS[level].color;
+      const label = LEVELS[level].label;
+      const card = ce('div', {class: 'card', role: 'region', 'aria-label': level + '档汇总'});
+      const bar = ce('div', {class: 'color-bar'});
+      bar.style.backgroundColor = color;
+      const header = ce('div', {class: 'card-header'});
+      const tag = ce('span', {class: 'tag', style: `background:${color}`}, level);
+      const labelSpan = ce('span', {}, label);
+      header.appendChild(tag);
+      header.appendChild(labelSpan);
+      card.appendChild(bar);
+      card.appendChild(header);
+      const count = ce('div', {class: 'count', 'aria-label': level + '档人数'}, list.length);
+      card.appendChild(count);
+      const percent = ce('div', {class: 'percent', 'aria-label': '占比'}, totalCount ? formatPercent(list.length/totalCount) : '0.0%');
+      card.appendChild(percent);
+      const names = ce('div', {class: 'names', tabindex: 0, 'aria-label': level + '档候选人名单'});
+      if (list.length === 0) {
+        names.textContent = '(无)';
+      } else {
+        names.textContent = list.map(i=>i.name).join('，');
+      }
+      card.appendChild(names);
+      container.appendChild(card);
+    }
+  }
+
+  // 渲染筛选栏按钮
+  function renderFilterBar() {
+    const container = document.querySelector('.filter-buttons');
+    container.innerHTML = '';
+    const buttons = [];
+    // 全部按钮特殊处理，颜色灰色
+    const btnAll = ce('button', {class: 'filter-button active', type: 'button', 'aria-pressed': 'true', 'aria-label': '筛选全部'}, '全部');
+    container.appendChild(btnAll);
+    buttons.push({el: btnAll, filter: null});
+    for (const level of ['A','B','C','D']) {
+      const color = LEVELS[level].color;
+      const btn = ce('button', {
+        class: 'filter-button',
+        type: 'button',
+        style: `color:${color}`,
+        'aria-label': `筛选${level}档`
+      }, level + '档');
+      container.appendChild(btn);
+      buttons.push({el: btn, filter: level});
+    }
+    return buttons;
+  }
+
+  // 渲染主表格内容
+  function renderTable(data, filterLevel) {
+    const tbody = document.querySelector('tbody');
+    tbody.innerHTML = '';
+    const filtered = filterLevel ? data.filter(i => i.grade === filterLevel) : data.slice();
+    filtered.forEach((item, index) => {
+      const tr = ce('tr', {tabindex: 0, role: 'row', 'aria-expanded': 'false', 'data-index': index});
+      // #列
+      const tdNum = ce('td', {}, index+1);
+      tr.appendChild(tdNum);
+      // 姓名
+      const tdName = ce('td', {}, item.name);
+      tr.appendChild(tdName);
+      // 院校·方向
+      const tdSchool = ce('td', {}, item.school);
+      tr.appendChild(tdSchool);
+      // 总分 = 四项相加
+      const total = calcTotal(item.score_breakdown);
+      const tdTotal = ce('td');
+      const progressBar = ce('span', {class: 'progress-bar', 'aria-label': '总分进度条'});
+      const progressFill = ce('span', {class: 'progress-fill'});
+      progressFill.style.backgroundColor = LEVELS[item.grade]?.color || '#666';
+      progressFill.style.width = (total) + '%';
+      progressBar.appendChild(progressFill);
+      const progressText = ce('span', {class: 'progress-text'}, total);
+      tdTotal.appendChild(progressBar);
+      tdTotal.appendChild(progressText);
+      tr.appendChild(tdTotal);
+      // 档位
+      const tdGrade = ce('td');
+      const tag = ce('span', {
+        class: 'tag-level',
+        style: `color:${LEVELS[item.grade]?.color};border-color:${LEVELS[item.grade]?.color}`,
+        'aria-label': '档位'
+      }, item.grade);
+      tdGrade.appendChild(tag);
+      tr.appendChild(tdGrade);
+      // 技术(40)
+      const tdTech = ce('td', {class: 'numeric'}, item.score_breakdown.technical_ability);
+      tr.appendChild(tdTech);
+      // 项目(30)
+      const tdProj = ce('td', {class: 'numeric'}, item.score_breakdown.project_quality);
+      tr.appendChild(tdProj);
+      // 学术(20)
+      const tdAcad = ce('td', {class: 'numeric'}, item.score_breakdown.academic_background);
+      tr.appendChild(tdAcad);
+      // 潜力(10)
+      const tdGrowth = ce('td', {class: 'numeric'}, item.score_breakdown.growth_potential);
+      tr.appendChild(tdGrowth);
+      // 展开箭头
+      const tdArrow = ce('td', {style: 'text-align:center;'});
+      const arrow = ce('span', {class: 'expand-arrow', role: 'button', tabindex: 0, 'aria-label': '展开详情'});
+      arrow.textContent = '▶';
+      tdArrow.appendChild(arrow);
+      tr.appendChild(tdArrow);
+      tbody.appendChild(tr);
+
+      // 详情行
+      const trDetails = ce('tr', {class: 'details-row', 'aria-hidden': 'true', style: 'display:none;'});
+      const tdDetails = ce('td', {colSpan: 10});
+      const content = ce('div', {class: 'details-content'});
+      // 亮点
+      const strengthsSec = ce('div', {class: 'details-section'});
+      strengthsSec.appendChild(ce('h4', {}, '亮点'));
+      if (item.internal_feedback.strengths.length > 0) {
+        const ul = ce('ul');
+        for (const s of item.internal_feedback.strengths)
