@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0f0f11;
+    color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 16px auto 40px;
+    padding: 0 12px 40px;
+  }
+  .top-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: #18181c;
+    border-radius: 4px;
+    flex: 1;
+    display: flex;
+  }
+  .card-color-bar {
+    width: 3px;
+    border-radius: 4px 0 0 4px;
+  }
+  .card-content {
+    padding: 12px 16px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+  .grade-label {
+    font-weight: 700;
+    font-size: 16px;
+    user-select: none;
+  }
+  .grade-label .desc {
+    font-weight: 400;
+    margin-left: 6px;
+    font-size: 14px;
+    color: #aaa;
+  }
+  .count {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1;
+  }
+  .percent {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #999;
+  }
+  .names {
+    font-size: 13px;
+    color: #bbb;
+    word-break: break-word;
+    user-select: text;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .filter-bar button {
+    background: transparent;
+    border: 1.5px solid #444;
+    border-radius: 4px;
+    color: #ccc;
+    padding: 6px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .filter-bar button.active {
+    border-color: var(--grade-color);
+    color: var(--grade-color);
+    font-weight: 700;
+  }
+  .filter-bar .count-info {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #999;
+    user-select: none;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+    user-select: none;
+  }
+  thead tr {
+    border-bottom: 1.5px solid #333;
+  }
+  thead th {
+    padding: 8px 6px;
+    font-weight: 700;
+    color: #aaa;
+    text-align: left;
+    vertical-align: bottom;
+  }
+  tbody tr {
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  tbody tr:hover {
+    background-color: #222227;
+  }
+  tbody tr.expanded {
+    background-color: #18181c;
+  }
+  tbody td {
+    padding: 8px 6px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  tbody td.numeric {
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    min-width: 40px;
+  }
+  tbody td.name,
+  tbody td.school {
+    white-space: nowrap;
+  }
+  .progress-bar-container {
+    background: #222227;
+    border-radius: 10px;
+    height: 14px;
+    width: 100%;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 14px;
+    border-radius: 10px;
+  }
+  .grade-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    border: 1.5px solid;
+    user-select: none;
+  }
+  .arrow-cell {
+    width: 20px;
+    text-align: center;
+    user-select: none;
+  }
+  .arrow {
+    display: inline-block;
+    border-style: solid;
+    border-width: 5px 4px 0 4px;
+    border-color: #888 transparent transparent transparent;
+    transform-origin: center;
+    transition: transform 0.25s ease;
+  }
+  .arrow.expanded {
+    transform: rotate(180deg);
+    border-width: 0 4px 5px 4px;
+    border-color: transparent transparent #888 transparent;
+  }
+  .detail-panel {
+    background: #18181c;
+    padding: 16px 20px 20px 20px;
+    font-size: 14px;
+    color: #ddd;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 16px;
+  }
+  .detail-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .detail-section h4 {
+    margin: 0 0 8px 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #ccc;
+  }
+  .detail-list {
+    list-style: disc inside;
+    margin: 0;
+    padding-left: 12px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .detail-list li {
+    margin-bottom: 4px;
+  }
+  .detail-text {
+    white-space: pre-wrap;
+    max-height: 140px;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+  .warning-box {
+    grid-column: span 3;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.3;
+    user-select: text;
+  }
+  .warning-review {
+    background: #facc15;
+    color: #3c3c00;
+  }
+  .warning-candidate {
+    background: #ef4444;
+    color: #fff;
+  }
+  #render-time {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #888;
+    user-select: none;
+    z-index: 9999;
+  }
+</style>
+</head>
+<body>
+<div id="render-time"></div>
+<div id="app">
+  <div class="top-summary" id="top-summary"></div>
+  <div class="filter-bar" role="region" aria-label="筛选栏">
+    <button data-grade="ALL" class="active" type="button" aria-pressed="true">全部</button>
+    <button data-grade="A" type="button" aria-pressed="false">A档</button>
+    <button data-grade="B" type="button" aria-pressed="false">B档</button>
+    <button data-grade="C" type="button" aria-pressed="false">C档</button>
+    <button data-grade="D" type="button" aria-pressed="false">D档</button>
+    <div class="count-info" id="count-info" aria-live="polite"></div>
+  </div>
+  <table role="table" aria-label="候选人列表">
+    <thead>
+      <tr>
+        <th scope="col" style="width: 32px;">#</th>
+        <th scope="col" style="width: 140px;">姓名</th>
+        <th scope="col" style="width: 220px;">院校·方向</th>
+        <th scope="col" style="width: 160px;">总分</th>
+        <th scope="col" style="width: 64px;">档位</th>
+        <th scope="col" class="numeric" style="width: 56px;">技术(40)</th>
+        <th scope="col" class="numeric" style="width: 56px;">项目(30)</th>
+        <th scope="col" class="numeric" style="width: 56px;">学术(20)</th>
+        <th scope="col" class="numeric" style="width: 56px;">潜力(10)</th>
+        <th scope="col" class="arrow-cell"></th>
+      </tr>
+    </thead>
+    <tbody id="table-body" role="rowgroup">
+    </tbody>
+  </table>
+</div>
+<script>
+  const input = '{"candidate_feedback":"核心技能与岗位要求匹配度不足；当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"","strengths":[],"tech_direction_suggestion":"","weaknesses":[]},"name":"","school":"","score_breakdown":{"academic_background":0,"growth_potential":0,"project_quality":0,"technical_ability":0},"total_score":0}';
+  const raw = JSON.parse(input);
+  const RESUME_DATA = Array.isArray(raw) ? raw : [raw];
+
+  // Fill missing total_score if zero or not present
+  RESUME_DATA.forEach(item => {
+    if (!item.total_score || item.total_score === 0) {
+      const sb = item.score_breakdown || {};
+      item.total_score = (sb.technical_ability||0) + (sb.project_quality||0) + (sb.academic_background||0) + (sb.growth_potential||0);
+    }
+  });
+
+  const GRADE_COLORS = {
+    A: '#4ade80',
+    B: '#60a5fa',
+    C: '#fbbf24',
+    D: '#f87171',
+  };
+  const GRADE_LABELS = {
+    A: '直接推荐',
+    B: '建议复核',
+    C: '存疑',
+    D: '建议淘汰',
+  };
+
+  // Calculate summary counts
+  function summarize(data) {
+    const summary = { A: [], B: [], C: [], D: [] };
+    data.forEach(d => {
+      const g = d.grade;
+      if (GRADE_COLORS[g]) summary[g].push(d);
+    });
+    return summary;
+  }
+
+  // Format percent string
+  function formatPercent(part, total) {
+    if (total === 0) return '0.0%';
+    return (part / total * 100).toFixed(1) + '%';
+  }
+
+  // Escape HTML
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, function(m) {
+      switch(m) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return m;
+      }
+    });
+  }
+
+  // Render top summary cards
+  function renderTopSummary(summary, totalCount) {
+    const container = document.getElementById('top-summary');
+    container.innerHTML = '';
+    ['A','B','C','D'].forEach(g => {
+      const arr = summary[g];
+      const count = arr.length;
+      const percent = formatPercent(count, totalCount);
+      const color = GRADE_COLORS[g];
+      const label = GRADE_LABELS[g];
+      const names = arr.map(x => x.name || '(空)').join('，') || '(无)';
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'region');
+      card.setAttribute('aria-label', `${g}档 ${label}，人数 ${count}，占比 ${percent}`);
+      card.innerHTML = `
+        <div class="card-color-bar" style="background-color:${color}"></div>
+        <div class="card-content">
+          <div class="grade-label" style="color:${color}">${g}档 <span class="desc">${label}</span></div>
+          <div class="count">${count}</div>
+          <div class="percent">${percent}</div>
+          <div class="names" title="${escapeHTML(names)}">${escapeHTML(names)}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Render filter buttons
+  function setupFilters() {
+    const buttons = document.querySelectorAll('.filter-bar button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        const grade = btn.getAttribute('data-grade');
+        filterTable(grade);
+      });
+    });
+  }
+
+  // Render table rows
+  function renderTableRows(data) {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    data.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      tr.setAttribute('tabindex', '0');
+      tr.setAttribute('role', 'row');
+      tr.dataset.index = idx;
+      const gradeColor = GRADE_COLORS[item.grade] || '#666';
+      const totalScore = item.total_score || 0;
+      const percentWidth = Math.min(totalScore, 100);
+      const sb = item.score_breakdown || {};
+      const nameDisplay = item.name || '(空)';
+      const schoolDisplay = item.school || '(空)';
+      tr.innerHTML = `
+        <td role="rowheader" aria-label="序号">${idx + 1}</td>
+        <td class="name" title="${escapeHTML(nameDisplay)}">${escapeHTML(nameDisplay)}</td>
+        <td class="school" title="${escapeHTML(schoolDisplay)}">${escapeHTML(schoolDisplay)}</td>
+        <td aria-label="总分">
+          <div class="progress-bar-container" aria-hidden="true">
+            <div class="progress-bar-fill" style="width:${percentWidth}%;background-color:${gradeColor}"></div>
+          </div>
+          <div style="position: relative; top: -18px; text-align: center; font-family: 'DM Mono', monospace; font-weight: 700; color: ${gradeColor}; user-select:none;">${totalScore}</div>
+        </td>
+        <td><span class="grade-tag" style="color:${gradeColor};border-color:${gradeColor};">${item.grade || '-'}</span></td>
+        <td class="numeric" title="技术能力">${sb.technical_ability || 0}</td>
+        <td class="numeric" title="项目质量">${sb.project_quality || 0}</td>
+        <td class="numeric" title="学术背景">${sb.academic_background || 0}</td>
+        <td class="numeric" title="成长潜力">${sb.growth_potential || 0}</td>
+        <td class="arrow-cell" aria-label="展开详情" role="button" aria-expanded="false" tabindex="-1"><span class="arrow"></span></td>
+      `;
+      tbody.appendChild(tr);
+      // Add detail row placeholder
+      const detailTr = document.createElement('tr');
+      detailTr.className = 'detail-row';
+      detailTr.style.display = 'none';
+      detailTr.setAttribute('aria-hidden', 'true');
+      detailTr.innerHTML = `<td colspan="10"></td>`;
+      tbody.appendChild(detailTr);
+    });
+  }
+
+  // Render detail panel content
+  function renderDetailPanel(item) {
+    const strengths = item.internal_feedback.strengths || [];
+    const weaknesses = item.internal_feedback.weaknesses || [];
+    const techSuggestion = item.internal_feedback.tech_direction_suggestion || '';
+    const reviewNote = item.internal_feedback.review_note || '';
+    const candidateFeedback = item.candidate_feedback || '';
+
+    return `
+    <div class="detail-panel" tabindex="0" aria-label="候选人详情">
+      <section class="detail-section" aria-labelledby="strengths-label">
+        <h4 id="strengths-label">亮点</h4>
+        ${strengths.length > 0 ? `<ul class="detail-list">${strengths.map(s => `<li>${escapeHTML(s)}</li>`).join('')}</ul>` : '<div class="detail-text">(无)</div>'}
+      </section>
+      <section class="detail-section" aria-labelledby="weaknesses-label">
+        <h4 id="weaknesses-label">不足</h4>
+        ${weaknesses.length > 0 ? `<ul class="detail-list">${weaknesses.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>` : '<div class="detail-text">(无)</div>'}
+      </section>
+      <section class="detail-section" aria-labelledby="tech-suggestion-label">
+        <h4 id="tech-suggestion-label">面试技术方向建议</h4>
+        <div class="detail-text">${techSuggestion ? escapeHTML(techSuggestion) : '(无)'}</div>
+      </section>
+      ${reviewNote ? `<div class="warning-box warning-review" role="alert" aria-live="assertive"><strong>复核重点：</strong>${escapeHTML(reviewNote)}</div>` : ''}
+      ${candidateFeedback ? `<div class="warning-box warning-candidate" role="alert" aria-live="assertive"><strong>候选人反馈：</strong>${escapeHTML(candidateFeedback)}</div>` : ''}
+    </div>
+    `;
+  }
+
+  // Filter and update table and count info
+  function filterTable(grade) {
+    let filtered;
+    if (grade === 'ALL') {
+      filtered = RESUME_DATA;
+    } else {
+      filtered = RESUME_DATA.filter(d => d.grade === grade);
+    }
+    renderTableRows(filtered);
+    update
