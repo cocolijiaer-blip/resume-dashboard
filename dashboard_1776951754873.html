@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0f0f11;
+    color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 16px auto 40px;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+  .top-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: #18181c;
+    border-radius: 4px;
+    flex: 1;
+    display: flex;
+    border-left: 3px solid transparent;
+    padding: 16px 20px 16px 16px;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .card.A { border-left-color: #4ade80; }
+  .card.B { border-left-color: #60a5fa; }
+  .card.C { border-left-color: #fbbf24; }
+  .card.D { border-left-color: #f87171; }
+  .card .grade {
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+  .card .desc {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 12px;
+  }
+  .card .count {
+    font-family: 'DM Mono', monospace;
+    font-size: 40px;
+    line-height: 1;
+    color: inherit;
+    margin-bottom: 6px;
+    user-select: text;
+  }
+  .card .percent {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 10px;
+  }
+  .card .names {
+    font-size: 12px;
+    color: #bbb;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-height: 48px;
+    overflow-y: auto;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    user-select: none;
+  }
+  .filter-bar .btn {
+    padding: 6px 14px;
+    border-radius: 4px;
+    background: #18181c;
+    border: 1px solid #333;
+    color: #ccc;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .filter-bar .btn:hover {
+    background: #222227;
+    border-color: #555;
+  }
+  .filter-bar .btn.active {
+    color: #fff;
+    border-color: transparent;
+  }
+  .filter-bar .btn.A.active { background-color: #4ade80; color: #0f0f11; }
+  .filter-bar .btn.B.active { background-color: #60a5fa; color: #0f0f11; }
+  .filter-bar .btn.C.active { background-color: #fbbf24; color: #0f0f11; }
+  .filter-bar .btn.D.active { background-color: #f87171; color: #0f0f11; }
+  .filter-bar .count-info {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #999;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+  }
+  thead tr {
+    border-bottom: 1px solid #444;
+  }
+  thead th {
+    padding: 10px 8px;
+    color: #bbb;
+    font-weight: 600;
+    text-align: left;
+    user-select: none;
+  }
+  thead th.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  tbody tr {
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  tbody tr:hover {
+    background: #222227;
+  }
+  tbody tr.expanded {
+    background: #1c1c20;
+  }
+  tbody td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  tbody td.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  .grade-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 12px;
+    border: 1.5px solid transparent;
+    user-select: none;
+  }
+  .grade-tag.A {
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  .grade-tag.B {
+    color: #60a5fa;
+    border-color: #60a5fa;
+  }
+  .grade-tag.C {
+    color: #fbbf24;
+    border-color: #fbbf24;
+  }
+  .grade-tag.D {
+    color: #f87171;
+    border-color: #f87171;
+  }
+  .progress-bar {
+    position: relative;
+    height: 14px;
+    background: #222227;
+    border-radius: 8px;
+    overflow: hidden;
+    user-select: none;
+  }
+  .progress-bar > div {
+    height: 100%;
+    border-radius: 8px 0 0 8px;
+  }
+  .progress-bar.A > div {
+    background-color: #4ade80;
+  }
+  .progress-bar.B > div {
+    background-color: #60a5fa;
+  }
+  .progress-bar.C > div {
+    background-color: #fbbf24;
+  }
+  .progress-bar.D > div {
+    background-color: #f87171;
+  }
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f0f11;
+    user-select: none;
+  }
+  .arrow {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid #888;
+    border-bottom: 2px solid #888;
+    transform: rotate(45deg);
+    margin-left: 6px;
+    transition: transform 0.2s;
+  }
+  .arrow.expanded {
+    transform: rotate(135deg);
+    border-color: #ccc;
+  }
+  .details-row {
+    background: #18181c;
+    color: #ccc;
+    font-size: 13px;
+  }
+  .details-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 16px 20px 16px 20px;
+  }
+  .details-section {
+    background: #222227;
+    border-radius: 4px;
+    padding: 12px 14px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .details-section h4 {
+    margin: 0 0 8px 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: #eee;
+  }
+  .details-section ul {
+    margin: 0;
+    padding-left: 18px;
+    list-style-type: disc;
+    color: #bbb;
+  }
+  .details-section p {
+    margin: 0;
+    color: #bbb;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  .alert {
+    margin-top: 12px;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.3;
+    user-select: text;
+  }
+  .alert.warning {
+    background-color: #facc15;
+    color: #3c3c0a;
+  }
+  .alert.error {
+    background-color: #f87171;
+    color: #4a0a0a;
+  }
+  #render-time {
+    position: fixed;
+    top: 10px;
+    right: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #666;
+    user-select: none;
+    z-index: 9999;
+  }
+  /* Scrollbar for cards and details */
+  .card .names::-webkit-scrollbar,
+  .details-section::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .card .names::-webkit-scrollbar-thumb,
+  .details-section::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 3px;
+  }
+  .card .names::-webkit-scrollbar-track,
+  .details-section::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+</style>
+</head>
+<body>
+<div id="render-time"></div>
+<div id="app">
+  <div class="top-summary" aria-label="档位汇总">
+    <!-- Cards inserted by JS -->
+  </div>
+  <div class="filter-bar" role="region" aria-label="筛选栏">
+    <button type="button" class="btn active" data-filter="all" aria-pressed="true">全部</button>
+    <button type="button" class="btn A" data-filter="A" aria-pressed="false">A档</button>
+    <button type="button" class="btn B" data-filter="B" aria-pressed="false">B档</button>
+    <button type="button" class="btn C" data-filter="C" aria-pressed="false">C档</button>
+    <button type="button" class="btn D" data-filter="D" aria-pressed="false">D档</button>
+    <div class="count-info" aria-live="polite" aria-atomic="true"></div>
+  </div>
+  <table role="table" aria-label="候选人列表">
+    <thead>
+      <tr>
+        <th style="width: 32px;">#</th>
+        <th style="width: 140px;">姓名</th>
+        <th style="width: 180px;">院校·方向</th>
+        <th style="width: 140px;">总分</th>
+        <th style="width: 72px;">档位</th>
+        <th class="numeric" style="width: 56px;">技术(40)</th>
+        <th class="numeric" style="width: 56px;">项目(30)</th>
+        <th class="numeric" style="width: 56px;">学术(20)</th>
+        <th class="numeric" style="width: 56px;">潜力(10)</th>
+        <th style="width: 32px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows inserted by JS -->
+    </tbody>
+  </table>
+</div>
+<script>
+const input = '[{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。其他档位留空字符串","grade":"D","internal_feedback":{"review_note":"","strengths":[],"tech_direction_suggestion":"建议补充完整简历内容，突出技术核心能力和项目贡献","weaknesses":["简历内容缺失，无法评估技术能力和项目经验","缺少教育背景信息，无法判断学术水平"]},"name":"候选人姓名","school":"院校 · 专业方向","score_breakdown":{"academic_background":0,"growth_potential":0,"project_quality":0,"technical_ability":0},"total_score":0}]';
+const raw = JSON.parse(input);
+const RESUME_DATA = Array.isArray(raw) ? raw : [raw];
+
+const GRADE_INFO = {
+  A: { label: 'A档', desc: '直接推荐', color: '#4ade80' },
+  B: { label: 'B档', desc: '建议复核', color: '#60a5fa' },
+  C: { label: 'C档', desc: '存疑', color: '#fbbf24' },
+  D: { label: 'D档', desc: '建议淘汰', color: '#f87171' },
+};
+
+function sumScores(scoreObj) {
+  return (scoreObj.technical_ability || 0) + (scoreObj.project_quality || 0) + (scoreObj.academic_background || 0) + (scoreObj.growth_potential || 0);
+}
+
+function createTopSummary(data) {
+  const container = document.querySelector('.top-summary');
+  container.innerHTML = '';
+  const totalCount = data.length;
+  const gradeGroups = { A: [], B: [], C: [], D: [] };
+  data.forEach(item => {
+    const g = item.grade || 'D';
+    gradeGroups[g] = gradeGroups[g] || [];
+    gradeGroups[g].push(item);
+  });
+  ['A','B','C','D'].forEach(g => {
+    const group = gradeGroups[g] || [];
+    const count = group.length;
+    const pct = totalCount ? ((count / totalCount) * 100).toFixed(1) : '0.0';
+    const names = group.map(i => i.name).join('，');
+    const card = document.createElement('div');
+    card.className = 'card ' + g;
+    card.setAttribute('role', 'region');
+    card.setAttribute('aria-label', GRADE_INFO[g].label + ' ' + GRADE_INFO[g].desc + '，人数：' + count);
+    card.innerHTML = `
+      <div class="grade">${GRADE_INFO[g].label} · ${GRADE_INFO[g].desc}</div>
+      <div class="count">${count}</div>
+      <div class="percent">${pct}%</div>
+      <div class="names" title="${names}">${names || '无候选人'}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function createTableRows(data) {
+  const tbody = document.querySelector('tbody');
+  tbody.innerHTML = '';
+  data.forEach((item, idx) => {
+    const totalScore = sumScores(item.score_breakdown);
+    item.total_score = totalScore;
+    const grade = item.grade || 'D';
+    const color = GRADE_INFO[grade]?.color || '#f87171';
+
+    const tr = document.createElement('tr');
+    tr.tabIndex = 0;
+    tr.setAttribute('data-index', idx);
+    tr.setAttribute('aria-expanded', 'false');
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td title="${item.name}">${item.name}</td>
+      <td title="${item.school}">${item.school}</td>
+      <td>
+        <div class="progress-bar ${grade}" style="position:relative;">
+          <div style="width:${totalScore}%;"></div>
+          <div class="progress-text" style="color:#0f0f11;">${totalScore}</div>
+        </div>
+      </td>
+      <td><span class="grade-tag ${grade}">${grade}</span></td>
+      <td class="numeric">${item.score_breakdown.technical_ability || 0}</td>
+      <td class="numeric">${item.score_breakdown.project_quality || 0}</td>
+      <td class="numeric">${item.score_breakdown.academic_background || 0}</td>
+      <td class="numeric">${item.score_breakdown.growth_potential || 0}</td>
+      <td><span class="arrow" aria-hidden="true"></span></td>
+    `;
+    tbody.appendChild(tr);
+
+    const detailTr = document.createElement('tr');
+    detailTr.className = 'details-row';
+    detailTr.style.display = 'none';
+    detailTr.setAttribute('aria-hidden', 'true');
+    const detailTd = document.createElement('td');
+    detailTd.colSpan = 10;
+    detailTd.style.paddingTop = '0';
+    detailTd.style.paddingBottom = '16px';
+
+    const strengthsList = item.internal_feedback.strengths.length > 0 ? 
+      `<ul>${item.internal_feedback.strengths.map(s => `<li>${s}</li>`).join('')}</ul>` : '<p>无亮点</p>';
+    const weaknessesList = item.internal_feedback.weaknesses.length > 0 ? 
+      `<ul>${item.internal_feedback.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>` : '<p>无不足</p>';
+    const techSuggestion = item.internal_feedback.tech_direction_suggestion || '无建议';
+
+    let reviewNoteBlock = '';
+    if (item.internal_feedback.review_note && item.internal_feedback.review_note.trim() !== '') {
+      reviewNoteBlock = `<div class="alert warning" role="alert" aria-label="复核重点">${item.internal_feedback.review_note}</div>`;
+    }
+    let candidateFeedbackBlock = '';
+    if (item.candidate_feedback && item.candidate_feedback.trim() !== '') {
+      candidateFeedbackBlock = `<div class="alert error" role="alert" aria-label="候选人反馈">${item.candidate_feedback}</div>`;
+    }
+
+    detailTd.innerHTML = `
+      <div class="details-container">
+        <section class="details-section" aria-label="亮点">
+          <h4>亮点</h4>
+          ${strengthsList}
+        </section>
+        <section class="details-section" aria-label="不足">
+          <h4>不足</h4>
+          ${weaknessesList}
+        </section>
+        <section class="details-section" aria-label="面试技术方向建议">
+          <h4>面试技术方向建议</h4>
+          <p>${techSuggestion}</p>
+        </section>
+      </div
