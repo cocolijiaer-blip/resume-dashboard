@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    background-color: #0f0f11;
+    color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    user-select: none;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 12px auto 24px;
+    padding: 0 12px 36px;
+  }
+  header {
+    display: flex;
+    justify-content: flex-end;
+    color: #888;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 16px;
+  }
+  /* 档位色 */
+  .grade-A { color: #4ade80; }
+  .grade-B { color: #60a5fa; }
+  .grade-C { color: #fbbf24; }
+  .grade-D { color: #f87171; }
+  .grade-A-bg { background-color: #4ade80; }
+  .grade-B-bg { background-color: #60a5fa; }
+  .grade-C-bg { background-color: #fbbf24; }
+  .grade-D-bg { background-color: #f87171; }
+
+  /* 顶部汇总区 */
+  #summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background-color: #18181c;
+    flex: 1;
+    border-radius: 4px;
+    display: flex;
+    padding: 12px 16px 12px 12px;
+    position: relative;
+    cursor: default;
+  }
+  .summary-card .color-bar {
+    width: 3px;
+    border-radius: 2px 0 0 2px;
+    margin-right: 12px;
+  }
+  .summary-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .summary-title {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .summary-count {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1;
+  }
+  .summary-percent {
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    color: #bbb;
+    margin-top: 2px;
+  }
+  .summary-names {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #aaa;
+    word-break: break-word;
+  }
+
+  /* 筛选栏 */
+  #filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  #filter-bar .btn {
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    background-color: #18181c;
+    color: #bbb;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    user-select: none;
+  }
+  #filter-bar .btn:hover:not(.active) {
+    background-color: #2a2a2e;
+  }
+  #filter-bar .btn.active {
+    color: #0f0f11;
+  }
+  #filter-bar .btn.active.grade-A { background-color: #4ade80; }
+  #filter-bar .btn.active.grade-B { background-color: #60a5fa; }
+  #filter-bar .btn.active.grade-C { background-color: #fbbf24; }
+  #filter-bar .btn.active.grade-D { background-color: #f87171; }
+  #filter-bar .count-info {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    font-size: 13px;
+    color: #bbb;
+    user-select: none;
+  }
+
+  /* 主表格 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead tr {
+    border-bottom: 1px solid #333;
+  }
+  thead th {
+    padding: 10px 8px 10px 8px;
+    text-align: left;
+    color: #bbb;
+    font-weight: 600;
+    user-select: none;
+  }
+  tbody tr {
+    background-color: #18181c;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  tbody tr:hover {
+    background-color: #252528;
+  }
+  tbody tr.expanded {
+    background-color: #222225;
+  }
+  tbody td {
+    padding: 8px 8px;
+    vertical-align: middle;
+    color: #ddd;
+  }
+  tbody td.right-align {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody td.center-align {
+    text-align: center;
+  }
+  tbody td.name-col {
+    font-weight: 600;
+  }
+  tbody td.school-col {
+    font-size: 12px;
+    color: #999;
+  }
+  /* 档位标签 */
+  .tag-grade {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1.5px solid;
+    user-select: none;
+  }
+  .tag-grade.grade-A {
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  .tag-grade.grade-B {
+    color: #60a5fa;
+    border-color: #60a5fa;
+  }
+  .tag-grade.grade-C {
+    color: #fbbf24;
+    border-color: #fbbf24;
+  }
+  .tag-grade.grade-D {
+    color: #f87171;
+    border-color: #f87171;
+  }
+
+  /* 总分进度条 */
+  .score-bar-container {
+    width: 100%;
+    height: 14px;
+    background-color: #222225;
+    border-radius: 7px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .score-bar {
+    height: 100%;
+    border-radius: 7px 0 0 7px;
+  }
+  .score-bar.grade-A { background-color: #4ade80; }
+  .score-bar.grade-B { background-color: #60a5fa; }
+  .score-bar.grade-C { background-color: #fbbf24; }
+  .score-bar.grade-D { background-color: #f87171; }
+  .score-number {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    color: #ddd;
+    user-select: text;
+  }
+  /* 展开箭头 */
+  .arrow {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-style: solid;
+    border-width: 2px 2px 0 0;
+    border-color: #bbb;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  tr.expanded > td .arrow {
+    transform: rotate(135deg);
+    border-color: #ddd;
+  }
+
+  /* 详情面板 */
+  .details-row {
+    background-color: #18181c;
+  }
+  .details-cell {
+    padding: 16px 20px 24px;
+    border-bottom: 1px solid #222;
+  }
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 24px;
+  }
+  .details-section {
+    background-color: #0f0f11;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.5;
+  }
+  .details-section h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: #bbb;
+  }
+  .details-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style-type: disc;
+  }
+  .details-list li {
+    margin-bottom: 6px;
+  }
+  /* 警告框 */
+  .warning-box {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .warning-review {
+    background-color: #facc15;
+    color: #4a4a04;
+  }
+  .warning-candidate {
+    background-color: #f87171;
+    color: #5c0f0f;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="render-time"></header>
+  <section id="summary"></section>
+  <section id="filter-bar"></section>
+  <section id="table-container"></section>
+</div>
+<script>
+  const input = '[{"candidate_feedback":"","grade":"A","internal_feedback":{"review_note":"","strengths":["具备扎实的技术能力，精通Java及相关技术栈，具有JVM调优与并发编程经验","参与字节跳动核心模块开发，项目有明确量化指标，表现出色","有ACM-ICPC亚洲区域赛金牌，且贡献开源项目，学术背景优秀","实习经历与岗位高度匹配，成长潜力强"],"tech_direction_suggestion":"推荐深入后端分布式系统与高并发方向，关注分布式缓存和事务管理技术","weaknesses":[]},"name":"陈明轩","school":"清华大学 · 计算机科学与技术","score_breakdown":{"academic_background":20,"growth_potential":10,"project_quality":28,"technical_ability":38},"total_score":86}]';
+  const raw = JSON.parse(input);
+  const RESUME_DATA = Array.isArray(raw) ? raw : [raw];
+
+  // 档位中文说明
+  const gradeInfo = {
+    A: { label: 'A档', desc: '直接推荐', color: '#4ade80' },
+    B: { label: 'B档', desc: '建议复核', color: '#60a5fa' },
+    C: { label: 'C档', desc: '存疑', color: '#fbbf24' },
+    D: { label: 'D档', desc: '建议淘汰', color: '#f87171' },
+  };
+
+  // 格式化百分比
+  function toPercent(num) {
+    return (num * 100).toFixed(1) + '%';
+  }
+
+  // 渲染顶部汇总区
+  function renderSummary(data) {
+    const container = document.getElementById('summary');
+    container.innerHTML = '';
+    const total = data.length;
+    const grades = ['A','B','C','D'];
+    grades.forEach(g => {
+      const filtered = data.filter(d => d.grade === g);
+      const count = filtered.length;
+      const percent = total === 0 ? 0 : count / total;
+      const names = filtered.map(d => d.name).join('，');
+      const info = gradeInfo[g];
+      const card = document.createElement('div');
+      card.className = 'summary-card';
+      card.innerHTML = `
+        <div class="color-bar grade-${g}"></div>
+        <div class="summary-content">
+          <div class="summary-title grade-${g}">${info.label} · ${info.desc}</div>
+          <div class="summary-count">${count}</div>
+          <div class="summary-percent">${toPercent(percent)}</div>
+          <div class="summary-names" title="${names}">${names || '无'}</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // 渲染筛选栏
+  function renderFilterBar(selectedGrade, data) {
+    const container = document.getElementById('filter-bar');
+    container.innerHTML = '';
+    const grades = ['All','A','B','C','D'];
+    grades.forEach(g => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn';
+      if (g === 'All') {
+        btn.textContent = '全部';
+        if (selectedGrade === 'All') btn.classList.add('active');
+      } else {
+        btn.textContent = g + '档';
+        btn.classList.add('grade-' + g);
+        if (selectedGrade === g) btn.classList.add('active');
+      }
+      btn.dataset.grade = g;
+      btn.addEventListener('click', () => {
+        if (selectedGrade !== g) {
+          renderApp(g);
+        }
+      });
+      container.appendChild(btn);
+    });
+    // 右侧显示计数
+    const filteredCount = selectedGrade === 'All' ? data.length : data.filter(d => d.grade === selectedGrade).length;
+    const countInfo = document.createElement('div');
+    countInfo.className = 'count-info';
+    countInfo.textContent = `显示 ${filteredCount} / ${data.length} 条`;
+    container.appendChild(countInfo);
+  }
+
+  // 渲染主表格
+  function renderTable(selectedGrade, data) {
+    const container = document.getElementById('table-container');
+    container.innerHTML = '';
+    const filtered = selectedGrade === 'All' ? data : data.filter(d => d.grade === selectedGrade);
+    const table = document.createElement('table');
+    // 表头
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th style="width: 32px;">#</th>
+          <th style="min-width: 120px;">姓名</th>
+          <th style="min-width: 220px;">院校·方向</th>
+          <th style="min-width: 140px;">总分</th>
+          <th style="width: 56px;">档位</th>
+          <th style="width: 56px; text-align:right;">技术(40)</th>
+          <th style="width: 56px; text-align:right;">项目(30)</th>
+          <th style="width: 56px; text-align:right;">学术(20)</th>
+          <th style="width: 56px; text-align:right;">潜力(10)</th>
+          <th style="width: 28px;"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+
+    filtered.forEach((item, idx) => {
+      const g = item.grade;
+      const scores = item.score_breakdown;
+      const totalScore = scores.technical_ability + scores.project_quality + scores.academic_background + scores.growth_potential;
+      const totalPercent = Math.min(totalScore, 100);
+      const tr = document.createElement('tr');
+      tr.dataset.index = idx;
+      tr.dataset.grade = g;
+      tr.innerHTML = `
+        <td class="center-align">${idx + 1}</td>
+        <td class="name-col">${item.name}</td>
+        <td class="school-col">${item.school}</td>
+        <td>
+          <div class="score-bar-container" title="总分 ${totalScore}">
+            <div class="score-bar grade-${g}" style="width: ${totalPercent}%;"></div>
+          </div>
+          <div class="score-number grade-${g}">${totalScore}</div>
+        </td>
+        <td class="center-align"><span class="tag-grade grade-${g}">${g}</span></td>
+        <td class="right-align">${scores.technical_ability}</td>
+        <td class="right-align">${scores.project_quality}</td>
+        <td class="right-align">${scores.academic_background}</td>
+        <td class="right-align">${scores.growth_potential}</td>
+        <td class="center-align"><span class="arrow"></span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    container.appendChild(table);
+
+    // 绑定展开事件
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => {
+        toggleDetails(tr, filtered[+tr.dataset.index]);
+      });
+    });
+  }
+
+  // 展开/折叠详情面板
+  function toggleDetails(tr, data) {
+    const tbody = tr.parentElement;
+    const expanded = tr.classList.contains('expanded');
+    // 先折叠所有已展开的
+    [...tbody.querySelectorAll('tr.expanded')].forEach(row => {
+      row.classList.remove('expanded');
+      if (row.nextSibling && row.nextSibling.classList.contains('details-row')) {
+        tbody.removeChild(row.nextSibling);
+      }
+    });
+    if (expanded) {
+      // 已展开，折叠后退出
+      return;
+    }
+    // 展开当前
+    tr.classList.add('expanded');
+    const detailsTr = document.createElement('tr');
+    detailsTr.className = 'details-row';
+    const td = document.createElement('td');
+    td.className = 'details-cell';
+    td.colSpan = 10;
+
+    // 亮点列表
+    const strengths = data.internal_feedback.strengths.length > 0 ? data.internal_feedback.strengths : ['无'];
+    // 不足列表
+    const weaknesses = data.internal_feedback.weaknesses.length > 0 ? data.internal_feedback.weaknesses : ['无'];
+    // 技术方向建议
+    const techSuggestion = data.internal_feedback.tech_direction_suggestion || '无';
+
+    // 警告
