@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>简历初筛看板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+SC&display=swap');
+  body {
+    margin: 0; background: #0f0f11; color: #ddd;
+    font-family: 'Noto Sans SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  #app {
+    max-width: 1200px;
+    margin: 1rem auto 3rem;
+    padding: 0 1rem 1rem;
+  }
+  h1 {
+    font-weight: normal;
+    font-size: 1.5rem;
+    color: #ddd;
+    margin-bottom: 0.5rem;
+  }
+  .top-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .card {
+    background: #18181c;
+    border-radius: 4px;
+    flex: 1;
+    display: flex;
+    padding: 1rem 1rem 1rem 0;
+    position: relative;
+    color: #ddd;
+    flex-direction: column;
+  }
+  .card .color-bar {
+    width: 3px;
+    border-radius: 2px;
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+  }
+  .card-header {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-left: 8px;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .grade-label {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0 0.3rem 0 0.3rem;
+    border-radius: 2px;
+    display: inline-block;
+    line-height: 1.3;
+  }
+  .count {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-left: 8px;
+    user-select: none;
+  }
+  .percent {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #aaa;
+    margin-left: 8px;
+    user-select: none;
+  }
+  .names-list {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #bbb;
+    user-select: text;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    user-select: none;
+  }
+  .filter-button {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: #aaa;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .filter-button:hover:not(.active) {
+    background: #222225;
+    color: #ddd;
+  }
+  .filter-button.active {
+    color: #fff;
+  }
+  .count-display {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #888;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+  thead tr {
+    border-bottom: 1px solid #333338;
+  }
+  thead th {
+    font-weight: 700;
+    padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+    text-align: left;
+    user-select: none;
+  }
+  thead th.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  tbody tr {
+    background: #18181c;
+    border-bottom: 1px solid #222225;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  tbody tr:hover {
+    background: #222225;
+  }
+  tbody tr.expanded {
+    background: #222225;
+  }
+  tbody td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+  }
+  tbody td.numeric {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+  }
+  .grade-tag {
+    font-family: 'DM Mono', monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    border: 1.5px solid;
+    display: inline-block;
+    user-select: none;
+  }
+  .progress-bar-container {
+    background: #222225;
+    border-radius: 2px;
+    width: 100%;
+    height: 16px;
+    overflow: hidden;
+    margin-right: 0.5rem;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 2px 0 0 2px;
+  }
+  .total-score-cell {
+    display: flex;
+    align-items: center;
+  }
+  .arrow-cell {
+    font-family: 'DM Mono', monospace;
+    user-select: none;
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-align: center;
+    width: 24px;
+    color: #888;
+  }
+  tbody tr.expanded > .arrow-cell {
+    color: #ddd;
+  }
+  .details-panel {
+    background: #18181c;
+    padding: 1rem 1.5rem 1.5rem;
+    border-top: 1px solid #222225;
+    color: #ccc;
+    font-size: 0.9rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem 2rem;
+  }
+  .details-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .details-section h3 {
+    margin: 0 0 0.4rem 0;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #ddd;
+  }
+  .details-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style-type: disc;
+    color: #bbb;
+  }
+  .details-text {
+    white-space: pre-wrap;
+    color: #bbb;
+    line-height: 1.4;
+  }
+  .warning-box {
+    grid-column: 1 / -1;
+    background: #facc15;
+    color: #3c3b07;
+    border-radius: 3px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    user-select: none;
+  }
+  .error-box {
+    grid-column: 1 / -1;
+    background: #f87171;
+    color: #5f1a1a;
+    border-radius: 3px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    user-select: none;
+  }
+  #render-time {
+    position: fixed;
+    top: 6px;
+    right: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: #666;
+    user-select: none;
+    background: rgba(255 255 255 / 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+<div id="render-time"></div>
+<div id="app">
+  <h1>简历初筛看板</h1>
+  <div class="top-summary" role="region" aria-label="档位汇总">
+    <div class="card" id="card-A" aria-label="A档卡片">
+      <div class="color-bar" style="background:#4ade80;"></div>
+      <div class="card-header">
+        <span class="grade-label" style="background:#4ade80;color:#0b0f08;">A</span>
+        <span>直接推荐</span>
+      </div>
+      <div class="count" id="count-A">0</div>
+      <div class="percent" id="percent-A">0%</div>
+      <div class="names-list" id="names-A"></div>
+    </div>
+    <div class="card" id="card-B" aria-label="B档卡片">
+      <div class="color-bar" style="background:#60a5fa;"></div>
+      <div class="card-header">
+        <span class="grade-label" style="background:#60a5fa;color:#0b1e3b;">B</span>
+        <span>建议复核</span>
+      </div>
+      <div class="count" id="count-B">0</div>
+      <div class="percent" id="percent-B">0%</div>
+      <div class="names-list" id="names-B"></div>
+    </div>
+    <div class="card" id="card-C" aria-label="C档卡片">
+      <div class="color-bar" style="background:#fbbf24;"></div>
+      <div class="card-header">
+        <span class="grade-label" style="background:#fbbf24;color:#4a3b00;">存疑</span>
+        <span>存疑</span>
+      </div>
+      <div class="count" id="count-C">0</div>
+      <div class="percent" id="percent-C">0%</div>
+      <div class="names-list" id="names-C"></div>
+    </div>
+    <div class="card" id="card-D" aria-label="D档卡片">
+      <div class="color-bar" style="background:#f87171;"></div>
+      <div class="card-header">
+        <span class="grade-label" style="background:#f87171;color:#3b0b0b;">D</span>
+        <span>建议淘汰</span>
+      </div>
+      <div class="count" id="count-D">0</div>
+      <div class="percent" id="percent-D">0%</div>
+      <div class="names-list" id="names-D"></div>
+    </div>
+  </div>
+  <div class="filter-bar" role="region" aria-label="筛选栏">
+    <button class="filter-button active" data-grade="all" aria-pressed="true" id="filter-all">全部</button>
+    <button class="filter-button" data-grade="A" aria-pressed="false" id="filter-A">A档</button>
+    <button class="filter-button" data-grade="B" aria-pressed="false" id="filter-B">B档</button>
+    <button class="filter-button" data-grade="C" aria-pressed="false" id="filter-C">C档</button>
+    <button class="filter-button" data-grade="D" aria-pressed="false" id="filter-D">D档</button>
+    <div class="count-display" id="display-count">显示 0 / 0 条</div>
+  </div>
+  <table role="table" aria-label="候选人列表">
+    <thead>
+      <tr>
+        <th scope="col" style="width: 2rem;">#</th>
+        <th scope="col">姓名</th>
+        <th scope="col">院校·方向</th>
+        <th scope="col" style="width: 10rem;">总分</th>
+        <th scope="col" style="width: 5rem;">档位</th>
+        <th scope="col" class="numeric" style="width: 4rem;">技术(40)</th>
+        <th scope="col" class="numeric" style="width: 4rem;">项目(30)</th>
+        <th scope="col" class="numeric" style="width: 4rem;">学术(20)</th>
+        <th scope="col" class="numeric" style="width: 4rem;">潜力(10)</th>
+        <th scope="col" style="width: 2rem;" aria-label="展开详情"></th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- 动态插入行 -->
+    </tbody>
+  </table>
+</div>
+<script>
+  const RESUME_DATA = [{"candidate_feedback":"核心技能与岗位要求匹配度不足；当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"","strengths":[],"tech_direction_suggestion":"无具体技术方向可评估，建议重点关注候选人基础技能及项目经验","weaknesses":["简历中缺乏任何技术项目或实习经历支撑技能描述","无明确的学术背景信息及成长性表现"]},"score_breakdown":{"academic_background":0,"growth_potential":0,"project_quality":0,"technical_ability":0},"total_score":0}];
+
+  const GRADE_INFO = {
+    A: {color:"#4ade80", label:"直接推荐"},
+    B: {color:"#60a5fa", label:"建议复核"},
+    C: {color:"#fbbf24", label:"存疑"},
+    D: {color:"#f87171", label:"建议淘汰"}
+  };
+
+  // 计算总分辅助函数
+  function calcTotalScore(item){
+    const sb = item.score_breakdown;
+    return (sb.technical_ability||0) + (sb.project_quality||0) + (sb.academic_background||0) + (sb.growth_potential||0);
+  }
+
+  // 渲染顶部汇总卡片
+  function renderTopSummary(data){
+    const total = data.length;
+    const groups = {A:[], B:[], C:[], D:[]};
+    data.forEach(item=>{
+      const g = item.grade;
+      if(groups[g]) groups[g].push(item.name||"");
+    });
+    ['A','B','C','D'].forEach(g=>{
+      const count = groups[g].length;
+      const percent = total>0 ? (count/total*100).toFixed(1) : "0.0";
+      document.getElementById('count-'+g).textContent = count;
+      document.getElementById('percent-'+g).textContent = percent + "%";
+      document.getElementById('names-'+g).textContent = groups[g].join('\n');
+      const card = document.getElementById('card-'+g);
+      if(count===0) card.style.opacity = '0.5';
+      else card.style.opacity = '1';
+    });
+  }
+
+  // 渲染主表格
+  function renderTable(data, filterGrade){
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = "";
+    let filtered = data;
+    if(filterGrade && filterGrade!=='all'){
+      filtered = data.filter(d=>d.grade===filterGrade);
+    }
+    filtered.forEach((item,i)=>{
+      const total = calcTotalScore(item);
+      const grade = item.grade;
+      const color = GRADE_INFO[grade]?.color || '#888';
+      const row = document.createElement('tr');
+      row.setAttribute('tabindex','0');
+      row.setAttribute('role','row');
+      row.dataset.index = i;
+      // 主行
+      row.innerHTML = `
+        <td>${i+1}</td>
+        <td>${item.name||""}</td>
+        <td>${item.school||""}</td>
+        <td class="total-score-cell">
+          <div class="progress-bar-container" aria-hidden="true">
+            <div class="progress-bar-fill" style="width:${total}%;background:${color};"></div>
+          </div>
+          <span style="color:${color}; font-family:'DM Mono', monospace; font-weight:700;">${total}</span>
+        </td>
+        <td><span class="grade-tag" style="color:${color};border-color:${color};">${grade}</span></td>
+        <td class="numeric">${item.score_breakdown.technical_ability||0}</td>
+        <td class="numeric">${item.score_breakdown.project_quality||0}</td>
+        <td class="numeric">${item.score_breakdown.academic_background||0}</td>
+        <td class="numeric">${item.score_breakdown.growth_potential||0}</td>
+        <td class="arrow-cell" aria-label="展开详情" aria-expanded="false">&#9656;</td>
+      `;
+      tbody.appendChild(row);
+
+      // 详情行
+      const detailsRow = document.createElement('tr');
+      detailsRow.style.display = 'none';
+      detailsRow.setAttribute('aria-hidden','true');
+      const detailsCell = document.createElement('td');
+      detailsCell.colSpan = 10;
+      detailsCell.style.paddingTop = '0';
+      detailsCell.style.paddingBottom = '1rem';
+
+      const strengths = item.internal_feedback.strengths || [];
+      const weaknesses = item.internal_feedback.weaknesses || [];
+      const techSuggestion = item.internal_feedback.tech_direction_suggestion || "";
+      const reviewNote = item.internal_feedback.review_note || "";
+      const candidateFeedback = item.candidate_feedback || "";
+
+      let detailsHTML = `<div class="details-panel" role="region" aria-label="候选人详情">
+        <div class="details-section" aria-label="亮点">
+          <h3>亮点</h3>
+          ${strengths.length>0 ? `<ul class="details-list">${strengths.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>` : `<p class="details-text" style="color:#555;">无</p>`}
+        </div>
+        <div class="details-section" aria-label="不足">
+          <h3>不足
