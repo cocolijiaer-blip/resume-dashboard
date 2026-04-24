@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历初筛看板</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:#0f0f11;color:#e8e8ec;min-height:100vh;padding:32px 24px;font-size:14px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.card{background:#18181c;border-radius:10px;padding:16px 18px;border-left:3px solid}
+.card-A{border-color:#4ade80}.card-B{border-color:#60a5fa}.card-C{border-color:#fbbf24}.card-D{border-color:#f87171}
+.card-label{font-size:11px;color:#55555f;font-family:'DM Mono',monospace;margin-bottom:6px}
+.card-count{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:4px}
+.count-A{color:#4ade80}.count-B{color:#60a5fa}.count-C{color:#fbbf24}.count-D{color:#f87171}
+.card-pct{font-size:12px;color:#8a8a96;margin-bottom:6px}
+.card-names{font-size:11px;color:#55555f;font-family:'DM Mono',monospace;line-height:1.8}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.fbtn{font-family:'DM Mono',monospace;font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.13);background:transparent;color:#8a8a96;cursor:pointer}
+.fbtn-active-all{background:rgba(255,255,255,0.08);color:#e8e8ec;border-color:rgba(255,255,255,0.2)}
+.fbtn-active-A{background:rgba(74,222,128,0.1);color:#4ade80;border-color:rgba(74,222,128,0.25)}
+.fbtn-active-B{background:rgba(96,165,250,0.1);color:#60a5fa;border-color:rgba(96,165,250,0.25)}
+.fbtn-active-C{background:rgba(251,191,36,0.1);color:#fbbf24;border-color:rgba(251,191,36,0.25)}
+.fbtn-active-D{background:rgba(248,113,113,0.1);color:#f87171;border-color:rgba(248,113,113,0.25)}
+.tcount{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:#55555f}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-family:'DM Mono',monospace;font-size:10px;color:#55555f;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07)}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer}
+tbody tr:hover{background:#18181c}
+td{padding:12px;vertical-align:middle;color:#e8e8ec}
+.td-num{font-family:'DM Mono',monospace;color:#55555f;font-size:11px}
+.td-name{font-weight:500}
+.td-school{color:#8a8a96;font-size:12px}
+.badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;padding:3px 10px;border-radius:4px;border:1px solid}
+.badge-A{background:rgba(74,222,128,0.1);color:#4ade80;border-color:rgba(74,222,128,0.25)}
+.badge-B{background:rgba(96,165,250,0.1);color:#60a5fa;border-color:rgba(96,165,250,0.25)}
+.badge-C{background:rgba(251,191,36,0.1);color:#fbbf24;border-color:rgba(251,191,36,0.25)}
+.badge-D{background:rgba(248,113,113,0.1);color:#f87171;border-color:rgba(248,113,113,0.25)}
+.score-cell{display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px}
+.bar-fill{height:3px;border-radius:2px}
+.bar-A{background:#4ade80}.bar-B{background:#60a5fa}.bar-C{background:#fbbf24}.bar-D{background:#f87171}
+.score-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:26px;text-align:right}
+.sub-score{font-family:'DM Mono',monospace;font-size:12px;color:#8a8a96;text-align:right}
+.arrow{font-size:10px;color:#55555f;font-family:'DM Mono',monospace}
+.detail-td{padding:0;background:#18181c}
+.detail-panel{padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.07)}
+.detail-box{background:#0f0f11;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px}
+.detail-box-full{grid-column:span 3}
+.detail-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#55555f;margin-bottom:8px}
+.detail-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+.detail-list li{font-size:12px;color:#8a8a96;line-height:1.5;padding-left:12px;position:relative}
+.detail-list li::before{content:'—';position:absolute;left:0;color:#55555f}
+.detail-text{font-size:12px;color:#8a8a96;line-height:1.6}
+.warn-box{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:6px;padding:8px 10px;font-size:12px;color:#fbbf24;margin-top:6px}
+.err-box{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:6px;padding:8px 10px;font-size:12px;color:#f87171;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="summary" class="summary"></div>
+<div class="toolbar" id="toolbar"></div>
+<table><thead><tr>
+<th>#</th><th>姓名</th><th>院校·方向</th><th>总分</th><th>档位</th>
+<th style="text-align:right">技术(40)</th><th style="text-align:right">项目(30)</th>
+<th style="text-align:right">学术(20)</th><th style="text-align:right">潜力(10)</th><th></th>
+</tr></thead><tbody id="tbody"></tbody></table>
+<script>
+const RESUME_DATA = JSON.parse('[{"candidate_feedback":"","grade":"A","internal_feedback":{"review_note":"","strengths":["具备深厚的技术能力，独立完成核心模块设计","项目有明确量化提升，且参与Google Brain实习，具备高质量项目经验"],"tech_direction_suggestion":"建议深入考察其分布式训练和推理优化的具体实现细节及算法理解","weaknesses":[]},"name":"李思远","school":"剑桥大学 · 计算机科学硕士","score_breakdown":{"academic_background":20,"growth_potential":8,"project_quality":27,"technical_ability":38},"total_score":83}]');
+const GL={A:{label:'直接推荐',color:'#4ade80'},B:{label:'建议复核',color:'#60a5fa'},C:{label:'存疑',color:'#fbbf24'},D:{label:'建议淘汰',color:'#f87171'}};
+let filter='all',expanded=null;
+function total(d){const s=d.score_breakdown;return(s.technical_ability||0)+(s.project_quality||0)+(s.academic_background||0)+(s.growth_potential||0);}
+function buildSummary(){
+  const el=document.getElementById('summary');
+  ['A','B','C','D'].forEach(g=>{
+    const items=RESUME_DATA.filter(d=>d.grade===g);
+    const pct=RESUME_DATA.length?Math.round(items.length/RESUME_DATA.length*100):0;
+    el.innerHTML+=`<div class="card card-${g}"><div class="card-label">${g}档 · ${GL[g].label}</div><div class="card-count count-${g}">${items.length}</div><div class="card-pct">${pct}%</div><div class="card-names">${items.map(i=>i.name||'—').join(' · ')||'—'}</div></div>`;
+  });
+}
+function buildToolbar(){
+  const el=document.getElementById('toolbar');
+  const filters=[{k:'all',l:'全部'},{'k':'A',l:'A档'},{'k':'B',l:'B档'},{'k':'C',l:'C档'},{'k':'D',l:'D档'}];
+  el.innerHTML=filters.map(f=>`<button class="fbtn ${filter===f.k?'fbtn-active-'+(f.k==='all'?'all':f.k):''}" onclick="setFilter('${f.k}')">${f.l}</button>`).join('')+`<div class="tcount" id="tcount"></div>`;
+  const list=filter==='all'?RESUME_DATA:RESUME_DATA.filter(d=>d.grade===filter);
+  document.getElementById('tcount').textContent=`显示 ${list.length} / ${RESUME_DATA.length} 条`;
+}
+function buildTable(){
+  const list=filter==='all'?RESUME_DATA:RESUME_DATA.filter(d=>d.grade===filter);
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  list.forEach((d,i)=>{
+    const t=total(d);const g=d.grade||'D';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="td-num">${String(i+1).padStart(2,'0')}</td><td class="td-name">${d.name||'—'}</td><td class="td-school">${d.school||''}</td><td><div class="score-cell"><div class="bar-track"><div class="bar-fill bar-${g}" style="width:${t}%"></div></div><span class="score-num">${t}</span></div></td><td><span class="badge badge-${g}">${g}档</span></td><td class="sub-score">${d.score_breakdown.technical_ability||0}</td><td class="sub-score">${d.score_breakdown.project_quality||0}</td><td class="sub-score">${d.score_breakdown.academic_background||0}</td><td class="sub-score">${d.score_breakdown.growth_potential||0}</td><td class="arrow">${expanded===d.name?'▲':'▼'}</td>`;
+    tr.onclick=()=>{expanded=expanded===d.name?null:d.name;buildTable();};
+    tbody.appendChild(tr);
+    if(expanded===d.name){
+      const fb=d.internal_feedback||{};
+      const dtr=document.createElement('tr');
+      dtr.innerHTML=`<td class="detail-td" colspan="10"><div class="detail-panel"><div class="detail-box"><div class="detail-label">亮点</div><ul class="detail-list">${(fb.strengths||[]).map(s=>`<li>${s}</li>`).join('')}</ul></div><div class="detail-box"><div class="detail-label">不足</div><ul class="detail-list">${(fb.weaknesses||[]).map(w=>`<li>${w}</li>`).join('')}</ul></div><div class="detail-box"><div class="detail-label">面试建议</div><div class="detail-text">${fb.tech_direction_suggestion||'—'}</div>${fb.review_note?`<div class="warn-box">${fb.review_note}</div>`:''}${d.candidate_feedback?`<div class="err-box">${d.candidate_feedback}</div>`:''}</div></div></td>`;
+      tbody.appendChild(dtr);
+    }
+  });
+}
+function setFilter(k){filter=k;expanded=null;buildToolbar();buildTable();}
+buildSummary();buildToolbar();buildTable();
+</script>
+</body>
+</html>
