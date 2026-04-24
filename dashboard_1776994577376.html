@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历初筛看板</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans SC',sans-serif;background:#0f0f11;color:#e8e8ec;min-height:100vh;padding:32px 24px;font-size:14px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.card{background:#18181c;border-radius:10px;padding:16px 18px;border-left:3px solid}
+.card-A{border-color:#4ade80}.card-B{border-color:#60a5fa}.card-C{border-color:#fbbf24}.card-D{border-color:#f87171}
+.card-label{font-size:11px;color:#55555f;font-family:'DM Mono',monospace;margin-bottom:6px}
+.card-count{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:4px}
+.count-A{color:#4ade80}.count-B{color:#60a5fa}.count-C{color:#fbbf24}.count-D{color:#f87171}
+.card-pct{font-size:12px;color:#8a8a96;margin-bottom:6px}
+.card-names{font-size:11px;color:#55555f;font-family:'DM Mono',monospace;line-height:1.8}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.fbtn{font-family:'DM Mono',monospace;font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.13);background:transparent;color:#8a8a96;cursor:pointer}
+.fbtn-active-all{background:rgba(255,255,255,0.08);color:#e8e8ec;border-color:rgba(255,255,255,0.2)}
+.fbtn-active-A{background:rgba(74,222,128,0.1);color:#4ade80;border-color:rgba(74,222,128,0.25)}
+.fbtn-active-B{background:rgba(96,165,250,0.1);color:#60a5fa;border-color:rgba(96,165,250,0.25)}
+.fbtn-active-C{background:rgba(251,191,36,0.1);color:#fbbf24;border-color:rgba(251,191,36,0.25)}
+.fbtn-active-D{background:rgba(248,113,113,0.1);color:#f87171;border-color:rgba(248,113,113,0.25)}
+.tcount{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:#55555f}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-family:'DM Mono',monospace;font-size:10px;color:#55555f;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07)}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer}
+tbody tr:hover{background:#18181c}
+td{padding:12px;vertical-align:middle;color:#e8e8ec}
+.td-num{font-family:'DM Mono',monospace;color:#55555f;font-size:11px}
+.td-name{font-weight:500}
+.td-school{color:#8a8a96;font-size:12px}
+.badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;padding:3px 10px;border-radius:4px;border:1px solid}
+.badge-A{background:rgba(74,222,128,0.1);color:#4ade80;border-color:rgba(74,222,128,0.25)}
+.badge-B{background:rgba(96,165,250,0.1);color:#60a5fa;border-color:rgba(96,165,250,0.25)}
+.badge-C{background:rgba(251,191,36,0.1);color:#fbbf24;border-color:rgba(251,191,36,0.25)}
+.badge-D{background:rgba(248,113,113,0.1);color:#f87171;border-color:rgba(248,113,113,0.25)}
+.score-cell{display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px}
+.bar-fill{height:3px;border-radius:2px}
+.bar-A{background:#4ade80}.bar-B{background:#60a5fa}.bar-C{background:#fbbf24}.bar-D{background:#f87171}
+.score-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:26px;text-align:right}
+.sub-score{font-family:'DM Mono',monospace;font-size:12px;color:#8a8a96;text-align:right}
+.arrow{font-size:10px;color:#55555f;font-family:'DM Mono',monospace}
+.detail-td{padding:0;background:#18181c}
+.detail-panel{padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,0.07)}
+.detail-box{background:#0f0f11;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px}
+.detail-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#55555f;margin-bottom:8px}
+.detail-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+.detail-list li{font-size:12px;color:#8a8a96;line-height:1.5;padding-left:12px;position:relative}
+.detail-list li::before{content:'—';position:absolute;left:0;color:#55555f}
+.detail-text{font-size:12px;color:#8a8a96;line-height:1.6}
+.warn-box{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);border-radius:6px;padding:8px 10px;font-size:12px;color:#fbbf24;margin-top:6px}
+.err-box{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:6px;padding:8px 10px;font-size:12px;color:#f87171;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="summary" class="summary"></div>
+<div class="toolbar" id="toolbar"></div>
+<table><thead><tr>
+<th>#</th><th>姓名</th><th>院校·方向</th><th>总分</th><th>档位</th>
+<th style="text-align:right">技术(40)</th><th style="text-align:right">项目(30)</th>
+<th style="text-align:right">学术(20)</th><th style="text-align:right">潜力(10)</th><th></th>
+</tr></thead><tbody id="tbody"></tbody></table>
+<script>
+const RESUME_DATA = JSON.parse('[{"candidate_feedback":"","grade":"A","internal_feedback":{"review_note":"","strengths":["具备核心模块设计与实现能力","有高并发系统优化经验","ACM-ICPC金牌及开源贡献加分"],"tech_direction_suggestion":"深入考察分布式系统与高并发处理能力，重点关注实际问题解决思路","weaknesses":["实习经历时间较短","项目多为课程设计，实际产出有限"]},"name":"陈明轩","school":"清华大学 · 计算机科学与技术","score_breakdown":{"academic_background":20,"growth_potential":5,"project_quality":27,"technical_ability":36},"total_score":88},{"candidate_feedback":"","grade":"A","internal_feedback":{"review_note":"","strengths":["具备深厚的技术能力，独立实现核心模块设计","有实际项目量化成果，推理吞吐量提升15%","顶尖学府计算机硕士背景，竞赛获奖突出","经历递进且与岗位高度匹配"],"tech_direction_suggestion":"建议面试重点考察分布式训练与CUDA编程深度，以及算法优化能力","weaknesses":[]},"name":"李思远","school":"剑桥大学 · 计算机科学 硕士","score_breakdown":{"academic_background":20,"growth_potential":10,"project_quality":27,"technical_ability":38},"total_score":82},{"candidate_feedback":"","grade":"B","internal_feedback":{"review_note":"项目和实习经历较为契合云原生方向，有一定潜力，建议深入面试","strengths":["参与腾讯云核心模块开发，具备一定技术深度","项目有实际落地使用，具备一定团队协作经验"],"tech_direction_suggestion":"建议面试重点考察其Go及云原生相关技术掌握情况，评估对复杂系统设计的理解和实践能力","weaknesses":["缺乏大型项目量化数据支撑","学术背景一般，缺少竞赛或开源加分项"]},"name":"王博文","school":"深圳大学 · 软件工程","score_breakdown":{"academic_background":12,"growth_potential":14,"project_quality":22,"technical_ability":20},"total_score":68},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"简历技术深度和项目质量较弱，且专业背景与岗位匹配度较低，建议谨慎考虑","strengths":["毕业于北京大学，学术背景扎实","有使用Django和ECharts完成个人项目"],"tech_direction_suggestion":"建议重点考察基础编程能力及学习意愿，评估是否适合基础研发岗位","weaknesses":["技术能力较为基础，缺乏核心模块设计经验","项目多为个人兴趣，缺乏团队协作和量化成果","专业与研发岗位方向匹配度较低，成长潜力体现不足"]},"name":"张雅雯","school":"北京大学 · 哲学","score_breakdown":{"academic_background":6,"growth_potential":0,"project_quality":3,"technical_ability":5},"total_score":34},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"候选人技术能力较基础，项目经历偏课程设计，缺少实际工作经验，成长潜力尚可","strengths":["具备良好的基础技能，熟练使用C++","参与操作系统内核预研，有一定技术深度"],"tech_direction_suggestion":"建议重点考察操作系统相关知识及算法能力，关注其学习能力和潜力","weaknesses":["缺乏实际项目经验和量化成果","竞赛和开源贡献为空，技术影响力不足"]},"name":"刘子健","school":"华中科技大学 · 计算机科学与技术","score_breakdown":{"academic_background":12,"growth_potential":7,"project_quality":5,"technical_ability":15},"total_score":49},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"项目和实习经历尚可，但技术深度和影响力需加强","strengths":["具备嵌入式开发和RTOS相关技能","有实际项目经验，参与智能家居网关开发"],"tech_direction_suggestion":"建议面试时重点考察嵌入式系统开发能力及项目中的具体技术细节","weaknesses":["项目规模和技术深度有限，缺乏核心模块设计经历","实习经历较短且贡献点较弱"]},"name":"周浩然","school":"复旦大学 · 电子信息工程","score_breakdown":{"academic_background":13,"growth_potential":17,"project_quality":13,"technical_ability":16},"total_score":59},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"候选人学历背景较好，但项目和实习经历偏短且技术应用深度不足，适合初级数据分析岗位","strengths":["具备数据分析相关技能和实习经验","硕士学历，专业匹配数据分析岗位"],"tech_direction_suggestion":"建议面试时重点考察数据分析基础与统计学能力，评估其实际动手能力和数据理解能力","weaknesses":["项目经验较少且缺乏量化成果","技术深度和技术广度均有限"]},"name":"吴菲菲","school":"伦敦政治经济学院 · 数据与社会","score_breakdown":{"academic_background":15,"growth_potential":13,"project_quality":12,"technical_ability":12},"total_score":52},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。其他档位留空字符串","grade":"D","internal_feedback":{"review_note":"简历项目和技术深度不足，难以体现核心研发能力","strengths":["具备Java全栈技术栈基础","实习中有前后端开发经验"],"tech_direction_suggestion":"建议面试中重点考察基础技术掌握情况及学习能力，关注实际编码能力和理解深度","weaknesses":["项目经历缺乏技术深度和量化成果","无竞赛或开源经历加分","实习时间短且职责较为基础"]},"name":"郑一鸣","school":"某普通一本 · 信息管理与信息系统","score_breakdown":{"academic_background":8,"growth_potential":8,"project_quality":3,"technical_ability":10},"total_score":29},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"项目质量和技术深度不足，需进一步提升项目规模和技术挑战度","strengths":["具备多种主流开发技术栈基础","项目经历涵盖前后端开发"],"tech_direction_suggestion":"建议面试时重点考察基础技术掌握情况及学习能力，关注项目中具体技术实现细节","weaknesses":["项目多为个人或课程项目，缺少团队协作和量化数据","无相关实习经历或技术挑战描述"]},"name":"高远","school":"浙江大学 · 计算机科学与技术","score_breakdown":{"academic_background":15,"growth_potential":10,"project_quality":7,"technical_ability":12},"total_score":44},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"项目质量和技术能力仍有提升空间，适合培养型岗位","strengths":["具备一定机器学习模型应用能力","有跨部门协调经验"],"tech_direction_suggestion":"建议面试时重点考察数据分析和产品迭代相关能力，评估其技术深度和业务理解","weaknesses":["项目多为课程作业，缺乏实际产品研发经验","技术深度和广度均有限"]},"name":"林晓琪","school":"新加坡国立大学 · 商业分析","score_breakdown":{"academic_background":15,"growth_potential":7,"project_quality":7,"technical_ability":12},"total_score":41},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"候选人技术经验偏基础，项目质量和规模有限，学历背景较弱，成长潜力一般","strengths":["掌握Java及常见框架","具备独立功能开发能力"],"tech_direction_suggestion":"建议重点考察基础技术掌握情况及学习能力，适合初级岗位","weaknesses":["项目多为课程或毕业设计，缺少实际团队协作和量化成果","学历较低，院校影响力有限"]},"name":"赵天宇","school":"某独立学院 · 软件工程","score_breakdown":{"academic_background":6,"growth_potential":4,"project_quality":4,"technical_ability":8},"total_score":32},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。其他档位留空字符串","grade":"D","internal_feedback":{"review_note":"","strengths":["金融硕士学历背景较好","实习中有实际行业研究经验"],"tech_direction_suggestion":"建议重点考察候选人数据分析及建模能力，评估其转研发岗位的潜力","weaknesses":["技术能力偏向金融分析，缺乏研发核心技能","项目为课程项目，缺乏大规模或团队协作项目经验"]},"name":"徐婉清","school":"香港大学 · 金融硕士","score_breakdown":{"academic_background":10,"growth_potential":8,"project_quality":4,"technical_ability":5},"total_score":27},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"候选人技术基础较好，但项目经历偏向竞赛和辅助开发，需验证实际研发能力","strengths":["具备网络安全相关技术栈和实习经验","CTF竞赛获奖且有漏洞提交经验"],"tech_direction_suggestion":"建议重点考察安全平台开发能力及漏洞挖掘深度","weaknesses":["项目中技术深度有限，主要为脚本编写","项目规模和量化数据较少，技术决策权不明确"]},"name":"孙瑞","school":"电子科技大学 · 网络空间安全","score_breakdown":{"academic_background":12,"growth_potential":13,"project_quality":18,"technical_ability":18},"total_score":61},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。","grade":"D","internal_feedback":{"review_note":"","strengths":["有一定的项目运营经验","具备活动策划能力"],"tech_direction_suggestion":"建议关注市场营销、产品运营等岗位，技术研发岗位匹配度较低","weaknesses":["技术能力与研发岗位匹配度低","项目与岗位技术挑战和深度不足"]},"name":"钱多多","school":"某211大学 · 市场营销","score_breakdown":{"academic_background":6,"growth_potential":4,"project_quality":7,"technical_ability":5},"total_score":22},{"candidate_feedback":"","grade":"B","internal_feedback":{"review_note":"","strengths":["参与微软亚洲研究院顶会收录项目","获得CCF大数据竞赛冠军"],"tech_direction_suggestion":"建议面试中深入探讨多模态预训练模型相关技术细节及实际贡献","weaknesses":["项目多为课程项目，缺乏大型实际项目经验","技术细节和贡献描述较为简单"]},"name":"黄启航","school":"北京邮电大学 · 人工智能","score_breakdown":{"academic_background":15,"growth_potential":16,"project_quality":18,"technical_ability":18},"total_score":67},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。其他档位留空字符串","grade":"D","internal_feedback":{"review_note":"D档候选人，技术栈与研发岗位匹配度较低","strengths":["具备完整设计流程经验","有国外名校硕士背景"],"tech_direction_suggestion":"建议关注UX设计岗位，面试时重点考察设计思路与用户研究能力","weaknesses":["技术能力偏向基础，缺乏研发深度","项目量化数据较少，影响力有限"]},"name":"周悦","school":"曼彻斯特大学 · 人机交互","score_breakdown":{"academic_background":15,"growth_potential":8,"project_quality":10,"technical_ability":10},"total_score":43},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"简历显示具备一定的技术基础和实践经历，但项目规模及核心贡献有限，适合培养型岗位","strengths":["具备Java及微服务相关技术栈，符合岗位技术要求","参与知名开源项目RocketMQ的测试及社区问题排查"],"tech_direction_suggestion":"建议面试时重点考察其对微服务架构及中间件的理解和实际应用能力","weaknesses":["项目多为个人学习项目，缺少团队协作及技术挑战的体现","缺乏核心模块独立设计经验"]},"name":"秦峰","school":"西安电子科技大学 · 软件工程","score_breakdown":{"academic_background":12,"growth_potential":13,"project_quality":14,"technical_ability":15},"total_score":54},{"candidate_feedback":"核心技能与岗位要求匹配度不足；或当前投递方向与候选人背景匹配度较低。其他档位留空字符串","grade":"D","internal_feedback":{"review_note":"候选人背景偏设计，技术研发能力不足，岗位匹配度较低","strengths":["有实际设计项目经验，方案进入最终评审","具备设计思维和用户研究能力"],"tech_direction_suggestion":"建议调整岗位方向，考虑设计相关岗位或产品体验类职位","weaknesses":["技术能力与研发岗位匹配度低","缺乏量化项目成果和技术深度"]},"name":"韩雪","school":"同济大学 · 工业设计","score_breakdown":{"academic_background":6,"growth_potential":10,"project_quality":7,"technical_ability":5},"total_score":28},{"candidate_feedback":"","grade":"C","internal_feedback":{"review_note":"项目经历偏课程性质，缺乏实际工程背景，技术深度和项目质量有限","strengths":["具备C++和Linux系统编程基础","参与华为软件精英挑战赛并取得团队较好排名"],"tech_direction_suggestion":"建议面试重点考察基础编程能力和算法能力，评估其学习潜力和实际动手能力","weaknesses":["缺乏实习经历和大型项目经验","项目多为课程性质，缺乏量化数据和技术深度"]},"name":"董浩然","school":"哈尔滨工业大学 · 计算机科学与技术","score_breakdown":{"academic_background":12,"growth_potential":8,"project_quality":12,"technical_ability":14},"total_score":46},{"candidate_feedback":"","grade":"A","internal_feedback":{"review_note":"","strengths":["独立设计并实现核心模块，技术深度强","项目作为队长完成分布式系统设计，具备技术决策能力","拥有高质量开源项目和竞赛获奖经历，学术背景优良","实习经历与岗位高度匹配，成长潜力明显"],"tech_direction_suggestion":"建议重点考察分布式系统设计与Go语言实战能力，深入了解缓存雪崩解决方案及迁移优化经验","weaknesses":[]},"name":"苏雨","school":"四川大学 · 计算机科学与技术","score_breakdown":{"academic_background":18,"growth_potential":10,"project_quality":27,"technical_ability":26},"total_score":81}]');
+const GL={A:{label:'直接推荐',color:'#4ade80'},B:{label:'建议复核',color:'#60a5fa'},C:{label:'存疑',color:'#fbbf24'},D:{label:'建议淘汰',color:'#f87171'}};
+let filter='all',expanded=null;
+function total(d){const s=d.score_breakdown;return(s.technical_ability||0)+(s.project_quality||0)+(s.academic_background||0)+(s.growth_potential||0);}
+function buildSummary(){
+  const el=document.getElementById('summary');
+  ['A','B','C','D'].forEach(g=>{
+    const items=RESUME_DATA.filter(d=>d.grade===g);
+    const pct=RESUME_DATA.length?Math.round(items.length/RESUME_DATA.length*100):0;
+    el.innerHTML+=`<div class="card card-${g}"><div class="card-label">${g}档 · ${GL[g].label}</div><div class="card-count count-${g}">${items.length}</div><div class="card-pct">${pct}%</div><div class="card-names">${items.map(i=>i.name||'—').join(' · ')||'—'}</div></div>`;
+  });
+}
+function buildToolbar(){
+  const el=document.getElementById('toolbar');
+  const filters=[{k:'all',l:'全部'},{k:'A',l:'A档'},{k:'B',l:'B档'},{k:'C',l:'C档'},{k:'D',l:'D档'}];
+  el.innerHTML=filters.map(f=>`<button class="fbtn ${filter===f.k?'fbtn-active-'+(f.k==='all'?'all':f.k):''}" onclick="setFilter('${f.k}')">${f.l}</button>`).join('')+`<div class="tcount" id="tcount"></div>`;
+  const list=filter==='all'?RESUME_DATA:RESUME_DATA.filter(d=>d.grade===filter);
+  document.getElementById('tcount').textContent=`显示 ${list.length} / ${RESUME_DATA.length} 条`;
+}
+function buildTable(){
+  const list=filter==='all'?RESUME_DATA:RESUME_DATA.filter(d=>d.grade===filter);
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  list.forEach((d,i)=>{
+    const t=total(d);const g=d.grade||'D';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="td-num">${String(i+1).padStart(2,'0')}</td><td class="td-name">${d.name||'—'}</td><td class="td-school">${d.school||''}</td><td><div class="score-cell"><div class="bar-track"><div class="bar-fill bar-${g}" style="width:${t}%"></div></div><span class="score-num">${t}</span></div></td><td><span class="badge badge-${g}">${g}档</span></td><td class="sub-score">${d.score_breakdown.technical_ability||0}</td><td class="sub-score">${d.score_breakdown.project_quality||0}</td><td class="sub-score">${d.score_breakdown.academic_background||0}</td><td class="sub-score">${d.score_breakdown.growth_potential||0}</td><td class="arrow">${expanded===d.name?'▲':'▼'}</td>`;
+    tr.onclick=()=>{expanded=expanded===d.name?null:d.name;buildTable();};
+    tbody.appendChild(tr);
+    if(expanded===d.name){
+      const fb=d.internal_feedback||{};
+      const dtr=document.createElement('tr');
+      dtr.innerHTML=`<td class="detail-td" colspan="10"><div class="detail-panel"><div class="detail-box"><div class="detail-label">亮点</div><ul class="detail-list">${(fb.strengths||[]).map(s=>`<li>${s}</li>`).join('')}</ul></div><div class="detail-box"><div class="detail-label">不足</div><ul class="detail-list">${(fb.weaknesses||[]).map(w=>`<li>${w}</li>`).join('')}</ul></div><div class="detail-box"><div class="detail-label">面试建议</div><div class="detail-text">${fb.tech_direction_suggestion||'—'}</div>${fb.review_note?`<div class="warn-box">${fb.review_note}</div>`:''}${d.candidate_feedback?`<div class="err-box">${d.candidate_feedback}</div>`:''}</div></div></td>`;
+      tbody.appendChild(dtr);
+    }
+  });
+}
+function setFilter(k){filter=k;expanded=null;buildToolbar();buildTable();}
+buildSummary();buildToolbar();buildTable();
+</script>
+</body>
+</html>
